@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String
+  role          Role           @default(STUDENT)
+  password      String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Student-specific
+  enrollmentNo  String?        @unique
+  year          Int?
+  branch        String?
+  interests     String[]
+  goals         String[]
+
+  attendances   Attendance[]
+  schedules     Schedule[]
+  tasks         Task[]
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+model Attendance {
+  id         String   @id @default(cuid())
+  userId     String
+  classId    String
+  date       DateTime @default(now())
+  status     Status   @default(PRESENT)
+  markedBy   String?
+
+  user       User     @relation(fields: [userId], references: [id])
+  class      Class    @relation(fields: [classId], references: [id])
+
+  @@unique([userId, classId, date])
+}
+
+enum Status {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+model Class {
+  id          String       @id @default(cuid())
+  name        String
+  code        String       @unique
+  teacherId   String
+  room        String?
+  qrCode      String?
+
+  attendances Attendance[]
+  schedules   Schedule[]
+}
+
+model Schedule {
+  id        String   @id @default(cuid())
+  userId    String
+  classId   String
+  dayOfWeek Int      // 0=Sunday, 6=Saturday
+  startTime String   // "09:00"
+  endTime   String   // "10:30"
+
+  user      User     @relation(fields: [userId], references: [id])
+  class     Class    @relation(fields: [classId], references: [id])
+
+  @@unique([userId, classId, dayOfWeek, startTime])
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  category    String   // "academic", "career", "skill"
+  priority    Int      @default(3)
+  completed   Boolean  @default(false)
+  dueDate     DateTime?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+}
