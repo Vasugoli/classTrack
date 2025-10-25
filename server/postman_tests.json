@@ -1,0 +1,725 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "classTrack Secure Attendance API",
+		"description": "API tests for secure attendance system with device binding and geo-locking",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register Student",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"student@example.com\",\n  \"name\": \"John Doe\",\n  \"password\": \"password123\",\n  \"role\": \"STUDENT\",\n  \"enrollmentNo\": \"ST2024001\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login Student",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('authToken', pm.cookies.get('token'));",
+									"    pm.environment.set('userId', response.user.id);",
+									"    console.log('Login successful, token stored');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"student@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"STUDENT\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Register Teacher",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"teacher@example.com\",\n  \"name\": \"Prof. Smith\",\n  \"password\": \"password123\",\n  \"role\": \"TEACHER\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login Teacher",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('teacherToken', pm.cookies.get('token'));",
+									"    pm.environment.set('teacherId', response.user.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"teacher@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"TEACHER\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Device Binding",
+			"item": [
+				{
+					"name": "Bind Device",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Device binding successful', function () {",
+									"    pm.response.to.have.status(201);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.environment.set('deviceBindingId', response.binding.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "token={{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userAgent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36\",\n  \"platform\": \"Windows\",\n  \"additionalEntropy\": \"unique-device-identifier-123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/device/bind",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "device", "bind"]
+						}
+					}
+				},
+				{
+					"name": "Get Device Info",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Device info retrieved', function () {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.status).to.eql('bound');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "token={{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/device/info",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "device", "info"]
+						}
+					}
+				},
+				{
+					"name": "Validate Current Device",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "token={{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/device/validate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "device", "validate"]
+						}
+					}
+				},
+				{
+					"name": "Try to Bind Second Device (Should Fail)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Second device binding rejected', function () {",
+									"    pm.response.to.have.status(409);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.code).to.eql('DEVICE_ALREADY_BOUND');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "token={{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userAgent\": \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36\",\n  \"platform\": \"macOS\",\n  \"additionalEntropy\": \"different-device-456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/device/bind",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "device", "bind"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Session Token Management",
+			"item": [
+				{
+					"name": "Create Class (Prerequisites)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "token={{teacherToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Computer Science 101\",\n  \"code\": \"CS101\",\n  \"room\": \"Room 201\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/classes",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "classes"]
+						}
+					}
+				},
+				{
+					"name": "Generate Session Token (Teacher)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('sessionToken', response.token);",
+									"    pm.environment.set('classId', response.classId);",
+									"    console.log('Session token:', response.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "token={{teacherToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"classId\": \"{{classId}}\",\n  \"expiresInSeconds\": 120\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/attendance/token",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "attendance", "token"]
+						}
+					}
+				},
+				{
+					"name": "Generate Token as Student (Should Fail)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Non-teacher token generation rejected', function () {",
+									"    pm.response.to.have.status(403);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.code).to.eql('TEACHER_REQUIRED');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "token={{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"classId\": \"{{classId}}\",\n  \"expiresInSeconds\": 60\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/attendance/token",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "attendance", "token"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Attendance Marking",
+			"item": [
+				{
+					"name": "Create Schedule (Prerequisites)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "token={{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"classId\": \"{{classId}}\",\n  \"dayOfWeek\": 1,\n  \"startTime\": \"09:00\",\n  \"endTime\": \"10:30\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/schedule",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "schedule"]
+						}
+					}
+				},
+				{
+					"name": "Mark Attendance (Valid)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Attendance marked successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.attendance.status).to.eql('PRESENT');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "token={{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"classCode\": \"CS101\",\n  \"status\": \"PRESENT\",\n  \"token\": \"{{sessionToken}}\",\n  \"latitude\": 28.6139,\n  \"longitude\": 77.2090\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/attendance/mark",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "attendance", "mark"]
+						}
+					}
+				},
+				{
+					"name": "Mark Attendance with Invalid Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Invalid token rejected', function () {",
+									"    pm.response.to.have.status(400);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.code).to.be.oneOf(['TOKEN_INVALID', 'TOKEN_ALREADY_USED']);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "token={{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"classCode\": \"CS101\",\n  \"status\": \"PRESENT\",\n  \"token\": \"invalid-token-123\",\n  \"latitude\": 28.6139,\n  \"longitude\": 77.2090\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/attendance/mark",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "attendance", "mark"]
+						}
+					}
+				},
+				{
+					"name": "Mark Attendance Outside Campus",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Geo violation detected', function () {",
+									"    pm.response.to.have.status(403);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.code).to.eql('OUTSIDE_CAMPUS');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "token={{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"classCode\": \"CS101\",\n  \"status\": \"PRESENT\",\n  \"token\": \"{{sessionToken}}\",\n  \"latitude\": 40.7128,\n  \"longitude\": -74.0060\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/attendance/mark",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "attendance", "mark"]
+						}
+					}
+				},
+				{
+					"name": "Mark Attendance Without Device Binding",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Create a new user without device binding",
+									"const registerRequest = {",
+									"  url: pm.environment.get('baseUrl') + '/api/auth/register',",
+									"  method: 'POST',",
+									"  header: {",
+									"    'Content-Type': 'application/json'",
+									"  },",
+									"  body: {",
+									"    mode: 'raw',",
+									"    raw: JSON.stringify({",
+									"      email: 'unbound@example.com',",
+									"      name: 'Unbound User',",
+									"      password: 'password123',",
+									"      role: 'STUDENT'",
+									"    })",
+									"  }",
+									"};",
+									"",
+									"pm.sendRequest(registerRequest, function (err, response) {",
+									"  if (!err && response.code === 201) {",
+									"    const loginRequest = {",
+									"      url: pm.environment.get('baseUrl') + '/api/auth/login',",
+									"      method: 'POST',",
+									"      header: {",
+									"        'Content-Type': 'application/json'",
+									"      },",
+									"      body: {",
+									"        mode: 'raw',",
+									"        raw: JSON.stringify({",
+									"          email: 'unbound@example.com',",
+									"          password: 'password123',",
+									"          role: 'STUDENT'",
+									"        })",
+									"      }",
+									"    };",
+									"    ",
+									"    pm.sendRequest(loginRequest, function (err, response) {",
+									"      if (!err && response.code === 200) {",
+									"        pm.environment.set('unboundToken', response.headers.get('Set-Cookie'));",
+									"      }",
+									"    });",
+									"  }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Device not bound rejection', function () {",
+									"    pm.response.to.have.status(403);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.code).to.eql('DEVICE_NOT_BOUND');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Cookie",
+								"value": "{{unboundToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"classCode\": \"CS101\",\n  \"status\": \"PRESENT\",\n  \"token\": \"{{sessionToken}}\",\n  \"latitude\": 28.6139,\n  \"longitude\": 77.2090\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/attendance/mark",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "attendance", "mark"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Audit Logs",
+			"item": [
+				{
+					"name": "Get Audit Logs (Admin Required)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "token={{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/audit/logs?limit=50&action=ATTENDANCE_ATTEMPT",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "audit", "logs"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "50"
+								},
+								{
+									"key": "action",
+									"value": "ATTENDANCE_ATTEMPT"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Audit Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "token={{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/audit/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "audit", "stats"]
+						}
+					}
+				},
+				{
+					"name": "Get User Audit Logs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "token={{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/audit/user/{{userId}}?limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "audit", "user", "{{userId}}"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global pre-request script",
+					"// Set base URL if not already set",
+					"if (!pm.environment.get('baseUrl')) {",
+					"    pm.environment.set('baseUrl', 'http://localhost:4000');",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test script",
+					"// Log response for debugging",
+					"if (pm.response.code >= 400) {",
+					"    console.log('Error Response:', pm.response.text());",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:4000",
+			"type": "string"
+		}
+	]
+}

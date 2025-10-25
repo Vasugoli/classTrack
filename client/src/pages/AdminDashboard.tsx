@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { usersAPI, classesAPI, attendanceAPI } from "@/services/api";
+import { usersAPI, classesAPI, attendanceAPI } from "@/services";
 import { Link } from "@tanstack/react-router";
 import toast from "react-hot-toast";
 
@@ -34,15 +34,15 @@ export default function AdminDashboard() {
 
 			// Fetch users
 			const usersRes = await usersAPI.listUsers();
-			const users = usersRes.data.users || [];
+			const users = usersRes.users || [];
 
 			// Fetch classes
 			const classesRes = await classesAPI.list(true);
-			const classes = classesRes.data.classes || [];
+			const classes = classesRes.classes || [];
 
 			// Fetch today's attendance
 			const attendanceRes = await attendanceAPI.today();
-			const attendance = attendanceRes.data.records || [];
+			const attendance = attendanceRes.attendances || [];
 
 			setStats({
 				totalUsers: users.length,
@@ -56,8 +56,7 @@ export default function AdminDashboard() {
 				todayAttendance: attendance.length,
 			});
 		} catch (err: any) {
-			const errorMsg =
-				err.response?.data?.error || "Failed to fetch statistics";
+			const errorMsg = err?.message || "Failed to fetch statistics";
 			setError(errorMsg);
 			toast.error(errorMsg);
 		} finally {

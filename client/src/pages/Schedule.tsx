@@ -1,15 +1,23 @@
-import { useEffect, useState } from "react";
-import { scheduleAPI } from "@/services/api";
+import { useState } from "react";
+import {
+	useSchedules,
+	useCreateSchedule,
+	useDeleteSchedule,
+} from "@/hooks/useSchedule";
 import toast from "react-hot-toast";
+import type { Schedule } from "@/services";
 
 export default function Schedule() {
-	const [items, setItems] = useState<any[]>([]);
 	const [classCode, setClassCode] = useState("");
 	const [dayOfWeek, setDayOfWeek] = useState(1);
 	const [startTime, setStartTime] = useState("09:00");
 	const [endTime, setEndTime] = useState("10:00");
-	const [loading, setLoading] = useState(true);
-	const [adding, setAdding] = useState(false);
+
+	const { data, refetch } = useSchedules();
+	const createMutation = useCreateSchedule();
+	const deleteMutation = useDeleteSchedule();
+
+	const items = data?.schedules || [];
 
 	const DAYS = [
 		"Sunday",
@@ -21,86 +29,25 @@ export default function Schedule() {
 		"Saturday",
 	];
 
-	const load = async () => {
-		try {
-			setLoading(true);
-			const res = await scheduleAPI.list();
-			setItems(res.data.schedules || []);
-		} catch (err: any) {
-			toast.error(err.response?.data?.error || "Failed to load schedule");
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	useEffect(() => {
-		load().catch(() => {});
-	}, []);
-
 	const add = async () => {
 		if (!classCode.trim()) {
 			toast.error("Please enter a class code");
 			return;
 		}
-		try {
-			setAdding(true);
-			await scheduleAPI.create({
-				classCode,
-				dayOfWeek,
-				startTime,
-				endTime,
-			});
-			toast.success("Schedule added successfully! 📅");
-			setClassCode("");
-			await load();
-		} catch (e: any) {
-			toast.error(e?.response?.data?.error || "Failed to add schedule");
-		} finally {
-			setAdding(false);
-		}
+		createMutation.mutate(
+			{ classCode, dayOfWeek, startTime, endTime },
+			{
+				onSuccess: () => {
+					setClassCode("");
+					refetch();
+				},
+			}
+		);
 	};
 
 	const remove = async (id: string) => {
-		try {
-			await scheduleAPI.remove(id);
-			toast.success("Schedule removed! 🗑️");
-			await load();
-		} catch (err: any) {
-			toast.error(
-				err.response?.data?.error || "Failed to remove schedule"
-			);
-		}
+		deleteMutation.mutate(id);
 	};
-
-	if (loading) {
-		return (
-			<div className='min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center'>
-				<div className='flex flex-col items-center gap-4'>
-					<svg
-						className='animate-spin h-12 w-12 text-indigo-600'
-						viewBox='0 0 24 24'>
-						<circle
-							className='opacity-25'
-							cx='12'
-							cy='12'
-							r='10'
-							stroke='currentColor'
-							strokeWidth='4'
-							fill='none'
-						/>
-						<path
-							className='opacity-75'
-							fill='currentColor'
-							d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
-						/>
-					</svg>
-					<div className='text-lg font-medium text-gray-700'>
-						Loading schedule...
-					</div>
-				</div>
-			</div>
-		);
-	}
 
 	return (
 		<div className='min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50'>
@@ -139,7 +86,9 @@ export default function Schedule() {
 							/>
 						</div>
 						<div className='space-y-2'>
-							<label htmlFor='dayOfWeek' className='block text-sm font-semibold text-gray-700'>
+							<label
+								htmlFor='dayOfWeek'
+								className='block text-sm font-semibold text-gray-700'>
 								Day
 							</label>
 							<select
@@ -186,8 +135,10 @@ export default function Schedule() {
 					<button
 						className='mt-6 w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-3.5 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
 						onClick={add}
-						disabled={adding}>
-						{adding ? "Adding..." : "📅 Add to Schedule"}
+						disabled={createMutation.isPending}>
+						{createMutation.isPending
+							? "Adding..."
+							: "📅 Add to Schedule"}
 					</button>
 				</div>
 
@@ -205,7 +156,7 @@ export default function Schedule() {
 						</div>
 					) : (
 						<div className='space-y-3'>
-							{items.map((s) => (
+							{items.map((s: Schedule) => (
 								<div
 									key={s.id}
 									className='flex items-center justify-between p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200 hover:shadow-md transition-shadow duration-200'>

@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "@tanstack/react-router";
-import toast from "react-hot-toast";
-import { authAPI } from "@/services/api";
-import { useAuthStore } from "@/store/authStore";
+import { useLogin } from "@/hooks/useAuth";
 
 type Role = "STUDENT" | "TEACHER" | "ADMIN";
 
@@ -11,42 +9,31 @@ export default function Login() {
 	const [password, setPassword] = useState("");
 	const [selectedRole, setSelectedRole] = useState<Role>("STUDENT");
 	const [error, setError] = useState("");
-	const [loading, setLoading] = useState(false);
-	const setUser = useAuthStore((s) => s.setUser);
 	const navigate = useNavigate();
+	const loginMutation = useLogin();
 
 	const onSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		setLoading(true);
 		setError("");
 
-		try {
-			// Send role with login request for server-side validation
-			const { data } = await authAPI.login({
-				email,
-				password,
-				role: selectedRole,
-			});
-
-			setUser(data.user);
-			toast.success(`Welcome back, ${data.user.name}! 👋`);
-
-			// Role-based navigation
-			if (data.user.role === "ADMIN") {
-				navigate({ to: "/admin" });
-			} else if (data.user.role === "TEACHER") {
-				navigate({ to: "/teacher" });
-			} else {
-				navigate({ to: "/dashboard" });
+		loginMutation.mutate(
+			{ email, password, role: selectedRole },
+			{
+				onSuccess: (data) => {
+					// Role-based navigation
+					if (data.user.role === "ADMIN") {
+						navigate({ to: "/admin" });
+					} else if (data.user.role === "TEACHER") {
+						navigate({ to: "/teacher" });
+					} else {
+						navigate({ to: "/dashboard" });
+					}
+				},
+				onError: (err: Error) => {
+					setError(err.message || "Login failed");
+				},
 			}
-		} catch (err: any) {
-			// Handle role mismatch errors from server
-			const errorMessage = err?.response?.data?.error || "Login failed";
-			setError(errorMessage);
-			toast.error(errorMessage);
-		} finally {
-			setLoading(false);
-		}
+		);
 	};
 
 	const roles: {
@@ -192,9 +179,9 @@ export default function Login() {
 						{/* Submit Button */}
 						<button
 							type='submit'
-							disabled={loading}
+							disabled={loginMutation.isPending}
 							className='w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3.5 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0'>
-							{loading ? (
+							{loginMutation.isPending ? (
 								<span className='flex items-center justify-center gap-2'>
 									<svg
 										className='animate-spin h-5 w-5'

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "@/services/api";
+import { usersAPI } from "@/services";
 import toast from "react-hot-toast";
 import { useAuthStore } from "@/store/authStore";
 
@@ -14,13 +14,13 @@ export default function Profile() {
 	const load = async () => {
 		try {
 			setLoading(true);
-			const res = await api.get("/users/profile");
-			const u = res.data.user;
+			const res = await usersAPI.getProfile();
+			const u = res.user;
 			setName(u.name || "");
 			setInterests((u.interests || []).join(", "));
 			setGoals((u.goals || []).join(", "));
 		} catch (err: any) {
-			toast.error(err.response?.data?.error || "Failed to load profile");
+			toast.error(err?.message || "Failed to load profile");
 		} finally {
 			setLoading(false);
 		}
@@ -33,7 +33,7 @@ export default function Profile() {
 	const save = async () => {
 		try {
 			setSaving(true);
-			await api.patch("/users/profile", {
+			await usersAPI.updateProfile({
 				name: name || undefined,
 				interests: interests
 					.split(",")
@@ -46,7 +46,7 @@ export default function Profile() {
 			});
 			toast.success("Profile updated successfully! 🎉");
 		} catch (err: any) {
-			toast.error(err.response?.data?.error || "Failed to save profile");
+			toast.error(err?.message || "Failed to save profile");
 		} finally {
 			setSaving(false);
 		}
@@ -136,8 +136,9 @@ export default function Profile() {
 									{user?.role === "ADMIN" && "🔐"}
 								</span>
 								<span className='font-bold text-blue-700'>
-									{(user?.role?.charAt(0) ?? '') +
-										(user?.role?.slice(1).toLowerCase() ?? '')}
+									{(user?.role?.charAt(0) ?? "") +
+										(user?.role?.slice(1).toLowerCase() ??
+											"")}
 								</span>
 							</div>
 						</div>

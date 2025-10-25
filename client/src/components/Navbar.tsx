@@ -1,9 +1,11 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useAuthStore } from "@/store/authStore";
+import { useLogout } from "@/hooks/useAuth";
 
 export default function Navbar() {
 	const user = useAuthStore((s) => s.user);
-	const logoutLocal = useAuthStore((s) => s.logout);
+	const navigate = useNavigate();
+	const logoutMutation = useLogout();
 
 	return (
 		<nav className='w-full border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60'>
@@ -117,16 +119,18 @@ export default function Navbar() {
 							</span>
 							<span className='text-gray-600'>{user.name}</span>
 							<button
-								onClick={async () => {
-									try {
-										await (
-											await import("@/services/api")
-										).authAPI.logout();
-									} catch {}
-									logoutLocal();
+								onClick={() => {
+									logoutMutation.mutate(undefined, {
+										onSuccess: () => {
+											navigate({ to: "/login" });
+										},
+									});
 								}}
-								className='text-red-600 hover:text-red-800 font-medium'>
-								Logout
+								disabled={logoutMutation.isPending}
+								className='text-red-600 hover:text-red-800 font-medium disabled:opacity-50'>
+								{logoutMutation.isPending
+									? "Logging out..."
+									: "Logout"}
 							</button>
 						</>
 					)}

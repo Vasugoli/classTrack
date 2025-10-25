@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "@tanstack/react-router";
 import toast from "react-hot-toast";
-import { authAPI } from "@/services/api";
+import { useRegister } from "@/hooks/useAuth";
 
 type Role = "STUDENT" | "TEACHER" | "ADMIN";
 
@@ -13,9 +13,9 @@ export default function Register() {
 	const [selectedRole, setSelectedRole] = useState<Role>("STUDENT");
 	const [enrollmentNo, setEnrollmentNo] = useState("");
 	const [error, setError] = useState("");
-	const [loading, setLoading] = useState(false);
 	const [success, setSuccess] = useState(false);
 	const navigate = useNavigate();
+	const registerMutation = useRegister();
 
 	const onSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -35,10 +35,8 @@ export default function Register() {
 			return;
 		}
 
-		setLoading(true);
-
-		try {
-			await authAPI.register({
+		registerMutation.mutate(
+			{
 				email,
 				name,
 				password,
@@ -47,20 +45,20 @@ export default function Register() {
 					selectedRole === "STUDENT" && enrollmentNo
 						? enrollmentNo
 						: undefined,
-			});
-
-			setSuccess(true);
-			toast.success("Account created successfully! 🎉");
-			setTimeout(() => {
-				navigate({ to: "/login" });
-			}, 2000);
-		} catch (err: any) {
-			const errorMsg = err?.response?.data?.error || "Registration failed";
-			setError(errorMsg);
-			toast.error(errorMsg);
-		} finally {
-			setLoading(false);
-		}
+			},
+			{
+				onSuccess: () => {
+					setSuccess(true);
+					setTimeout(() => {
+						navigate({ to: "/login" });
+					}, 2000);
+				},
+				onError: (err: any) => {
+					const errorMsg = err?.message || "Registration failed";
+					setError(errorMsg);
+				},
+			}
+		);
 	};
 
 	const roles: {
@@ -103,7 +101,9 @@ export default function Register() {
 						Your account has been created successfully
 					</p>
 					<div className='flex items-center justify-center gap-2 text-sm text-gray-500'>
-						<svg className='animate-spin h-4 w-4' viewBox='0 0 24 24'>
+						<svg
+							className='animate-spin h-4 w-4'
+							viewBox='0 0 24 24'>
 							<circle
 								className='opacity-25'
 								cx='12'
@@ -137,7 +137,9 @@ export default function Register() {
 					<h1 className='text-4xl font-bold text-gray-900 mb-2'>
 						Create Account
 					</h1>
-					<p className='text-gray-600'>Join classTrack and start tracking your attendance</p>
+					<p className='text-gray-600'>
+						Join classTrack and start tracking your attendance
+					</p>
 				</div>
 
 				<div className='bg-white rounded-2xl shadow-xl p-8 space-y-6 animate-in border border-gray-100'>
@@ -161,7 +163,9 @@ export default function Register() {
 									<button
 										key={role.value}
 										type='button'
-										onClick={() => setSelectedRole(role.value)}
+										onClick={() =>
+											setSelectedRole(role.value)
+										}
 										className={`group relative p-4 border-2 rounded-xl transition-all duration-200 text-center overflow-hidden ${
 											selectedRole === role.value
 												? "border-blue-600 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg scale-105"
@@ -242,7 +246,9 @@ export default function Register() {
 								</label>
 								<div className='relative'>
 									<div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none'>
-										<span className='text-gray-400'>🎓</span>
+										<span className='text-gray-400'>
+											🎓
+										</span>
 									</div>
 									<input
 										className='w-full border-2 border-gray-200 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none'
@@ -271,7 +277,9 @@ export default function Register() {
 									placeholder='Minimum 6 characters'
 									type='password'
 									value={password}
-									onChange={(e) => setPassword(e.target.value)}
+									onChange={(e) =>
+										setPassword(e.target.value)
+									}
 									required
 									minLength={6}
 								/>
@@ -292,7 +300,9 @@ export default function Register() {
 									placeholder='Re-enter your password'
 									type='password'
 									value={confirmPassword}
-									onChange={(e) => setConfirmPassword(e.target.value)}
+									onChange={(e) =>
+										setConfirmPassword(e.target.value)
+									}
 									required
 								/>
 							</div>
@@ -301,11 +311,13 @@ export default function Register() {
 						{/* Submit Button */}
 						<button
 							type='submit'
-							disabled={loading}
+							disabled={registerMutation.isPending}
 							className='w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3.5 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0'>
-							{loading ? (
+							{registerMutation.isPending ? (
 								<span className='flex items-center justify-center gap-2'>
-									<svg className='animate-spin h-5 w-5' viewBox='0 0 24 24'>
+									<svg
+										className='animate-spin h-5 w-5'
+										viewBox='0 0 24 24'>
 										<circle
 											className='opacity-25'
 											cx='12'

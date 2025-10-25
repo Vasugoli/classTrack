@@ -1,117 +1,43 @@
-import { useEffect, useState } from "react";
-import { productivityAPI } from "@/services/api";
-import toast from "react-hot-toast";
-
-interface Suggestion {
-	title: string;
-	category?: string;
-}
-interface Task {
-	id: string;
-	title: string;
-	description?: string;
-	category: string;
-	priority: number;
-	completed: boolean;
-	dueDate?: string;
-}
+import { useState } from "react";
+import {
+	useTasks,
+	useSuggestions,
+	useCreateTask,
+	useUpdateTask,
+	useDeleteTask,
+} from "@/hooks/useTasks";
 
 export default function Productivity() {
-	const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-	const [tasks, setTasks] = useState<Task[]>([]);
 	const [title, setTitle] = useState("");
-	const [loading, setLoading] = useState(true);
-	const [adding, setAdding] = useState(false);
 
-	const load = async () => {
-		try {
-			setLoading(true);
-			const [sugRes, taskRes] = await Promise.all([
-				productivityAPI.suggestions(),
-				productivityAPI.tasks.list(),
-			]);
-			setSuggestions(sugRes.data.suggestions || []);
-			setTasks(taskRes.data.tasks || []);
-		} catch (err: any) {
-			toast.error(err.response?.data?.error || "Failed to load data");
-		} finally {
-			setLoading(false);
-		}
-	};
+	const { data: suggestionsData } = useSuggestions();
+	const { data: tasksData } = useTasks();
+	const createMutation = useCreateTask();
+	const updateMutation = useUpdateTask();
+	const deleteMutation = useDeleteTask();
 
-	useEffect(() => {
-		load().catch(() => {});
-	}, []);
+	const suggestions = suggestionsData?.suggestions || [];
+	const tasks = tasksData?.tasks || [];
 
 	const add = async () => {
 		if (!title.trim()) {
-			toast.error("Please enter a task title");
 			return;
 		}
-		try {
-			setAdding(true);
-			await productivityAPI.tasks.create({ title });
-			toast.success("Task added! 📝");
-			setTitle("");
-			await load();
-		} catch (err: any) {
-			toast.error(err.response?.data?.error || "Failed to add task");
-		} finally {
-			setAdding(false);
-		}
+		createMutation.mutate(
+			{ title },
+			{
+				onSuccess: () => setTitle(""),
+			}
+		);
 	};
 
 	const toggle = async (id: string, completed: boolean) => {
-		try {
-			await productivityAPI.tasks.update(id, { completed: !completed });
-			toast.success(
-				completed ? "Task marked as incomplete" : "Task completed! ✅"
-			);
-			await load();
-		} catch (err: any) {
-			toast.error(err.response?.data?.error || "Failed to update task");
-		}
+		updateMutation.mutate({ id, data: { completed: !completed } });
 	};
 
 	const remove = async (id: string) => {
-		try {
-			await productivityAPI.tasks.remove(id);
-			toast.success("Task removed! 🗑️");
-			await load();
-		} catch (err: any) {
-			toast.error(err.response?.data?.error || "Failed to remove task");
-		}
+		deleteMutation.mutate(id);
 	};
-
-	if (loading) {
-		return (
-			<div className='min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-violet-50 flex items-center justify-center'>
-				<div className='flex flex-col items-center gap-4'>
-					<svg
-						className='animate-spin h-12 w-12 text-pink-600'
-						viewBox='0 0 24 24'>
-						<circle
-							className='opacity-25'
-							cx='12'
-							cy='12'
-							r='10'
-							stroke='currentColor'
-							strokeWidth='4'
-							fill='none'
-						/>
-						<path
-							className='opacity-75'
-							fill='currentColor'
-							d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
-						/>
-					</svg>
-					<div className='text-lg font-medium text-gray-700'>
-						Loading productivity...
-					</div>
-				</div>
-			</div>
-		);
-	}
 
 	return (
 		<div className='min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-violet-50'>
@@ -174,8 +100,8 @@ export default function Productivity() {
 						<button
 							className='bg-gradient-to-r from-pink-600 to-violet-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-pink-700 hover:to-violet-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
 							onClick={add}
-							disabled={adding}>
-							{adding ? "Adding..." : "Add"}
+							disabled={createMutation.isPending}>
+							{createMutation.isPending ? "Adding..." : "Add"}
 						</button>
 					</div>
 				</div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { classesAPI, attendanceAPI } from "@/services/api";
+import { classesAPI, attendanceAPI, type Attendance } from "@/services";
 import { useAuthStore } from "@/store/authStore";
 import toast from "react-hot-toast";
 
@@ -10,24 +10,11 @@ interface Class {
 	room?: string;
 }
 
-interface AttendanceRecord {
-	id: string;
-	userId: string;
-	classId: string;
-	date: string;
-	status: "PRESENT" | "ABSENT" | "LATE";
-	user: {
-		name: string;
-		email: string;
-		enrollmentNo?: string;
-	};
-}
-
 export default function TeacherDashboard() {
 	const user = useAuthStore((s) => s.user);
 	const [classes, setClasses] = useState<Class[]>([]);
 	const [selectedClass, setSelectedClass] = useState<string | null>(null);
-	const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+	const [attendance, setAttendance] = useState<Attendance[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
 
@@ -51,12 +38,12 @@ export default function TeacherDashboard() {
 		try {
 			setLoading(true);
 			const res = await classesAPI.list();
-			setClasses(res.data.classes || []);
-			if (res.data.classes && res.data.classes.length > 0) {
-				setSelectedClass(res.data.classes[0].id);
+			setClasses(res.classes || []);
+			if (res.classes && res.classes.length > 0) {
+				setSelectedClass(res.classes[0].id);
 			}
 		} catch (err: any) {
-			const errorMsg = err.response?.data?.error || "Failed to fetch classes";
+			const errorMsg = err?.message || "Failed to fetch classes";
 			setError(errorMsg);
 			toast.error(errorMsg);
 		} finally {
@@ -67,9 +54,9 @@ export default function TeacherDashboard() {
 	const fetchAttendanceForClass = async (classId: string) => {
 		try {
 			const res = await attendanceAPI.getByClass(classId);
-			setAttendance(res.data.attendance || []);
+			setAttendance(res.attendances || []);
 		} catch (err: any) {
-			const errorMsg = err.response?.data?.error || "Failed to fetch attendance";
+			const errorMsg = err?.message || "Failed to fetch attendance";
 			setError(errorMsg);
 			toast.error(errorMsg);
 		}
@@ -90,7 +77,8 @@ export default function TeacherDashboard() {
 			setShowNewClassForm(false);
 			await fetchClasses();
 		} catch (err: any) {
-			const errorMsg = err.response?.data?.error || "Failed to create class";
+			const errorMsg =
+				err.response?.data?.error || "Failed to create class";
 			setError(errorMsg);
 			toast.error(errorMsg);
 		}
@@ -105,7 +93,9 @@ export default function TeacherDashboard() {
 		return (
 			<div className='min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 flex items-center justify-center'>
 				<div className='flex flex-col items-center gap-4'>
-					<svg className='animate-spin h-12 w-12 text-purple-600' viewBox='0 0 24 24'>
+					<svg
+						className='animate-spin h-12 w-12 text-purple-600'
+						viewBox='0 0 24 24'>
 						<circle
 							className='opacity-25'
 							cx='12'
@@ -121,7 +111,9 @@ export default function TeacherDashboard() {
 							d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
 						/>
 					</svg>
-					<div className='text-lg font-medium text-gray-700'>Loading your classes...</div>
+					<div className='text-lg font-medium text-gray-700'>
+						Loading your classes...
+					</div>
 				</div>
 			</div>
 		);
@@ -140,7 +132,9 @@ export default function TeacherDashboard() {
 							<h1 className='text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent'>
 								Teacher Dashboard
 							</h1>
-							<p className='text-gray-600'>Welcome back, {user?.name}! 👋</p>
+							<p className='text-gray-600'>
+								Welcome back, {user?.name}! 👋
+							</p>
 						</div>
 					</div>
 				</div>
@@ -169,8 +163,9 @@ export default function TeacherDashboard() {
 					<StatCard
 						label='Present Today'
 						value={
-							todayAttendance.filter((a) => a.status === "PRESENT")
-								.length
+							todayAttendance.filter(
+								(a) => a.status === "PRESENT"
+							).length
 						}
 						icon='👥'
 						gradient='from-purple-500 to-purple-600'
@@ -194,7 +189,9 @@ export default function TeacherDashboard() {
 							My Classes
 						</h2>
 						<button
-							onClick={() => setShowNewClassForm(!showNewClassForm)}
+							onClick={() =>
+								setShowNewClassForm(!showNewClassForm)
+							}
 							className='px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium'>
 							+ New Class
 						</button>
@@ -206,7 +203,9 @@ export default function TeacherDashboard() {
 							className='mb-6 p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 animate-in'>
 							<div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-4'>
 								<div className='space-y-2'>
-									<label className='block text-sm font-medium text-gray-700'>Class Name</label>
+									<label className='block text-sm font-medium text-gray-700'>
+										Class Name
+									</label>
 									<input
 										type='text'
 										placeholder='e.g., Mathematics 101'
@@ -219,7 +218,9 @@ export default function TeacherDashboard() {
 									/>
 								</div>
 								<div className='space-y-2'>
-									<label className='block text-sm font-medium text-gray-700'>Class Code</label>
+									<label className='block text-sm font-medium text-gray-700'>
+										Class Code
+									</label>
 									<input
 										type='text'
 										placeholder='e.g., MATH101'
@@ -232,7 +233,9 @@ export default function TeacherDashboard() {
 									/>
 								</div>
 								<div className='space-y-2'>
-									<label className='block text-sm font-medium text-gray-700'>Room (Optional)</label>
+									<label className='block text-sm font-medium text-gray-700'>
+										Room (Optional)
+									</label>
 									<input
 										type='text'
 										placeholder='e.g., Room 201'
@@ -263,7 +266,10 @@ export default function TeacherDashboard() {
 					{classes.length === 0 ? (
 						<div className='text-center py-12'>
 							<div className='text-6xl mb-4'>📚</div>
-							<p className='text-gray-500 text-lg'>No classes yet. Create your first class to get started!</p>
+							<p className='text-gray-500 text-lg'>
+								No classes yet. Create your first class to get
+								started!
+							</p>
 						</div>
 					) : (
 						<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
@@ -281,11 +287,17 @@ export default function TeacherDashboard() {
 										{cls.name}
 									</div>
 									<div className='text-sm text-gray-600 mb-1'>
-										<span className='font-medium'>Code:</span> {cls.code}
+										<span className='font-medium'>
+											Code:
+										</span>{" "}
+										{cls.code}
 									</div>
 									{cls.room && (
 										<div className='text-sm text-gray-600'>
-											<span className='font-medium'>Room:</span> {cls.room}
+											<span className='font-medium'>
+												Room:
+											</span>{" "}
+											{cls.room}
 										</div>
 									)}
 								</button>
@@ -305,7 +317,9 @@ export default function TeacherDashboard() {
 						{attendance.length === 0 ? (
 							<div className='text-center py-12'>
 								<div className='text-6xl mb-4'>📋</div>
-								<p className='text-gray-500 text-lg'>No attendance records yet</p>
+								<p className='text-gray-500 text-lg'>
+									No attendance records yet
+								</p>
 							</div>
 						) : (
 							<div className='overflow-x-auto'>
@@ -335,14 +349,15 @@ export default function TeacherDashboard() {
 												key={record.id}
 												className='hover:bg-gray-50 transition-colors duration-150'>
 												<td className='px-4 py-4 text-sm font-medium text-gray-800'>
-													{record.user.name}
+													{record.user?.name || "N/A"}
 												</td>
 												<td className='px-4 py-4 text-sm text-gray-600'>
-													{record.user.email}
+													{record.user?.email ||
+														"N/A"}
 												</td>
 												<td className='px-4 py-4 text-sm text-gray-600'>
-													{record.user.enrollmentNo ||
-														"-"}
+													{record.user
+														?.enrollmentNo || "-"}
 												</td>
 												<td className='px-4 py-4 text-sm text-gray-600'>
 													{new Date(
@@ -391,12 +406,16 @@ function StatCard({
 		<div className='bg-white rounded-2xl shadow-xl border border-gray-100 p-6 animate-in hover:-translate-y-1 transition-transform duration-200'>
 			<div className='flex items-center justify-between'>
 				<div>
-					<div className={`text-3xl font-bold bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}>
+					<div
+						className={`text-3xl font-bold bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}>
 						{value}
 					</div>
-					<div className='text-sm text-gray-600 mt-2 font-medium'>{label}</div>
+					<div className='text-sm text-gray-600 mt-2 font-medium'>
+						{label}
+					</div>
 				</div>
-				<div className={`text-4xl p-3 rounded-xl bg-gradient-to-r ${gradient} bg-opacity-10`}>
+				<div
+					className={`text-4xl p-3 rounded-xl bg-gradient-to-r ${gradient} bg-opacity-10`}>
 					{icon}
 				</div>
 			</div>

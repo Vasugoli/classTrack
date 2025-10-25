@@ -1,27 +1,19 @@
-import { useEffect, useState } from "react";
 import { Navigate } from "@tanstack/react-router";
-import toast from "react-hot-toast";
-import { scheduleAPI } from "@/services/api";
 import { useAuthStore } from "@/store/authStore";
+import { useSchedules } from "@/hooks/useSchedule";
+import { useTodayAttendance } from "@/hooks/useAttendance";
+import { useTasks } from "@/hooks/useTasks";
 
 export default function Dashboard() {
 	const user = useAuthStore((s) => s.user);
-	const [schedules, setSchedules] = useState<any[]>([]);
-	const [loading, setLoading] = useState(true);
+	const { data: schedulesData, isLoading } = useSchedules();
+	const { data: attendanceData } = useTodayAttendance();
+	const { data: tasksData } = useTasks();
 
-	useEffect(() => {
-		setLoading(true);
-		scheduleAPI
-			.list()
-			.then((r) => {
-				setSchedules(r.data.schedules || []);
-				setLoading(false);
-			})
-			.catch(() => {
-				toast.error("Failed to load schedule");
-				setLoading(false);
-			});
-	}, []);
+	const schedules = schedulesData?.schedules || [];
+	const pendingTasks =
+		tasksData?.tasks?.filter((t) => !t.completed).length || 0;
+	const attendanceRate = attendanceData?.attendances?.length || 0;
 
 	// Redirect based on role
 	if (user?.role === "TEACHER") {
@@ -93,7 +85,7 @@ export default function Dashboard() {
 									Attendance Rate
 								</p>
 								<p className='text-4xl font-bold text-gray-900'>
-									-
+									{attendanceRate}%
 								</p>
 							</div>
 							<div className='w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg'>
@@ -114,7 +106,7 @@ export default function Dashboard() {
 									Tasks Pending
 								</p>
 								<p className='text-4xl font-bold text-gray-900'>
-									-
+									{pendingTasks}
 								</p>
 							</div>
 							<div className='w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg'>
@@ -142,7 +134,7 @@ export default function Dashboard() {
 						</div>
 					</div>
 
-					{loading ? (
+					{isLoading ? (
 						<div className='flex items-center justify-center py-12'>
 							<svg
 								className='animate-spin h-10 w-10 text-blue-600'

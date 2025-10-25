@@ -1,85 +1,38 @@
-import { useEffect, useState } from "react";
-import { attendanceAPI } from "@/services/api";
+import { useState } from "react";
+import {
+	useMarkAttendance,
+	useTodayAttendance,
+	useAttendanceHistory,
+} from "@/hooks/useAttendance";
 import toast from "react-hot-toast";
+import type { Attendance } from "@/services";
 
 export default function Attendance() {
 	const [code, setCode] = useState("");
-	const [today, setToday] = useState<any[]>([]);
-	const [history, setHistory] = useState<any[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [marking, setMarking] = useState(false);
+	const { data: todayData, refetch: refetchToday } = useTodayAttendance();
+	const { data: historyData, refetch: refetchHistory } =
+		useAttendanceHistory();
+	const markMutation = useMarkAttendance();
 
-	const refresh = async () => {
-		try {
-			setLoading(true);
-			const [t, h] = await Promise.all([
-				attendanceAPI.today(),
-				attendanceAPI.history(),
-			]);
-			setToday(t.data.records || []);
-			setHistory(h.data.records || []);
-		} catch (err: any) {
-			toast.error(
-				err.response?.data?.error || "Failed to load attendance"
-			);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	useEffect(() => {
-		refresh().catch(() => {});
-	}, []);
+	const today = todayData?.attendances || [];
+	const history = historyData?.attendances || [];
 
 	const mark = async () => {
 		if (!code.trim()) {
 			toast.error("Please enter a class code");
 			return;
 		}
-		try {
-			setMarking(true);
-			await attendanceAPI.mark({ classCode: code });
-			toast.success(`Attendance marked for ${code}! ✅`);
-			setCode("");
-			await refresh();
-		} catch (e: any) {
-			toast.error(
-				e?.response?.data?.error || "Failed to mark attendance"
-			);
-		} finally {
-			setMarking(false);
-		}
-	};
-
-	if (loading) {
-		return (
-			<div className='min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center'>
-				<div className='flex flex-col items-center gap-4'>
-					<svg
-						className='animate-spin h-12 w-12 text-green-600'
-						viewBox='0 0 24 24'>
-						<circle
-							className='opacity-25'
-							cx='12'
-							cy='12'
-							r='10'
-							stroke='currentColor'
-							strokeWidth='4'
-							fill='none'
-						/>
-						<path
-							className='opacity-75'
-							fill='currentColor'
-							d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
-						/>
-					</svg>
-					<div className='text-lg font-medium text-gray-700'>
-						Loading attendance...
-					</div>
-				</div>
-			</div>
+		markMutation.mutate(
+			{ classCode: code },
+			{
+				onSuccess: () => {
+					setCode("");
+					refetchToday();
+					refetchHistory();
+				},
+			}
 		);
-	}
+	};
 
 	return (
 		<div className='min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50'>
@@ -125,8 +78,8 @@ export default function Attendance() {
 						<button
 							className='px-8 py-3.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0'
 							onClick={mark}
-							disabled={marking}>
-							{marking ? (
+							disabled={markMutation.isPending}>
+							{markMutation.isPending ? (
 								<span className='flex items-center gap-2'>
 									<svg
 										className='animate-spin h-5 w-5'
@@ -170,7 +123,7 @@ export default function Attendance() {
 						</div>
 					) : (
 						<div className='space-y-3'>
-							{today.map((r) => (
+							{today.map((r: Attendance) => (
 								<div
 									key={r.id}
 									className='flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200 hover:shadow-md transition-shadow duration-200'>
@@ -219,7 +172,7 @@ export default function Attendance() {
 						</div>
 					) : (
 						<div className='space-y-3'>
-							{history.map((r) => (
+							{history.map((r: Attendance) => (
 								<div
 									key={r.id}
 									className='flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200 hover:shadow-md transition-shadow duration-200'>
