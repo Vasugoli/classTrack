@@ -1,480 +1,826 @@
-Welcome to your new TanStack app! 
+# ClassTrack Client
 
-# Getting Started
+Modern, responsive web application for ClassTrack - a comprehensive attendance and productivity management system. Built with React 19, TanStack Router, and Tailwind CSS for a seamless user experience across student, teacher, and admin roles.
 
-To run this application:
+## Table of Contents
 
-```bash
-npm install
-npm run start
+- [Overview](#overview)
+- [Tech Stack](#tech-stack)
+- [Features](#features)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Architecture](#architecture)
+- [Routing](#routing)
+- [State Management](#state-management)
+- [API Integration](#api-integration)
+- [Components](#components)
+- [Pages](#pages)
+- [Development](#development)
+- [Build & Deployment](#build--deployment)
+
+## Overview
+
+ClassTrack Client is a type-safe, performance-optimized React application that provides different interfaces for students, teachers, and administrators. The application emphasizes user experience with smooth animations, real-time feedback, and intelligent data caching through React Query.
+
+## Tech Stack
+
+### Core Framework
+- **React 19** - Latest React with concurrent features
+- **TypeScript** - Full type safety across the application
+- **Vite 7** - Lightning-fast build tool and dev server
+
+### Routing & Data Fetching
+- **TanStack Router** - Type-safe routing with preloading
+- **TanStack Query (React Query)** - Server state management with caching
+- **TanStack Router Devtools** - Route debugging
+- **TanStack Query Devtools** - Query inspection
+
+### Styling
+- **Tailwind CSS 4** - Utility-first CSS framework
+- **tailwind-animate** - Animation utilities
+- **Custom CSS** - Additional styles in `styles.css`
+
+### State Management
+- **Zustand** - Lightweight state management for auth
+- **Persist Middleware** - Automatic localStorage persistence
+
+### UI/UX
+- **react-hot-toast** - Beautiful toast notifications
+- **Custom Components** - Reusable UI components
+
+### Testing
+- **Vitest** - Unit and integration testing
+- **Testing Library** - React component testing
+- **jsdom** - DOM environment for tests
+
+### Developer Tools
+- **web-vitals** - Performance monitoring
+- **ESLint** (implicit) - Code quality
+- **TypeScript** - Static type checking
+
+## Features
+
+### Universal Features
+
+- **Role-Based Authentication** - Separate interfaces for Student, Teacher, Admin
+- **Protected Routes** - Automatic redirect for unauthenticated users
+- **Persistent Sessions** - Auto-login with saved credentials
+- **Responsive Design** - Mobile-first, works on all screen sizes
+- **Real-time Notifications** - Toast messages for all user actions
+- **Smart Caching** - Reduced API calls with React Query
+- **Optimistic Updates** - Instant UI feedback before server confirmation
+
+### Student Features
+
+- **Dashboard** - Personal overview with attendance statistics
+- **Attendance Tracking** - Mark attendance with QR codes and geolocation
+- **Schedule View** - Weekly class timetable
+- **Productivity Hub** - Task management with AI-powered suggestions
+- **Profile Management** - Set interests and goals for personalized recommendations
+
+### Teacher Features
+
+- **Teacher Dashboard** - Class overview and student statistics
+- **Class Management** - Create and manage classes
+- **Attendance Reports** - View and export attendance data
+- **Student Directory** - Access student information
+- **Schedule Management** - Organize class timings
+
+### Admin Features
+
+- **Admin Dashboard** - System-wide analytics and monitoring
+- **User Management** - CRUD operations for all users
+- **Class Administration** - Full control over classes
+- **Attendance Reports** - Comprehensive attendance analytics
+- **System Configuration** - Platform-wide settings
+
+## Project Structure
+
+```
+client/
+├── public/
+│   ├── manifest.json           # PWA manifest
+│   ├── robots.txt              # Search engine directives
+│   └── favicon.ico             # Application icon
+├── src/
+│   ├── main.tsx                # Application entry point
+│   ├── App.tsx                 # Landing page component
+│   ├── router.tsx              # Route definitions
+│   ├── styles.css              # Global styles & Tailwind
+│   ├── reportWebVitals.ts      # Performance monitoring
+│   ├── components/             # Reusable UI components
+│   │   ├── Layout.tsx          # Root layout with navbar
+│   │   ├── Navbar.tsx          # Navigation bar with role-based menus
+│   │   ├── ProtectedRoute.tsx  # Authentication guard
+│   │   └── UIComponents.tsx    # Shared UI elements
+│   ├── pages/                  # Route pages
+│   │   ├── Login.tsx           # Role-based login page
+│   │   ├── Register.tsx        # User registration
+│   │   ├── Dashboard.tsx       # Student dashboard
+│   │   ├── TeacherDashboard.tsx # Teacher dashboard
+│   │   ├── AdminDashboard.tsx  # Admin dashboard
+│   │   ├── Attendance.tsx      # Attendance management
+│   │   ├── Schedule.tsx        # Class schedule
+│   │   ├── Productivity.tsx    # Task & productivity tracking
+│   │   ├── Profile.tsx         # User profile editor
+│   │   ├── Classes.tsx         # Class management
+│   │   └── Users.tsx           # User management (admin)
+│   ├── hooks/                  # Custom React hooks
+│   │   ├── useAuth.ts          # Authentication operations
+│   │   ├── useAttendance.ts    # Attendance CRUD
+│   │   ├── useClasses.ts       # Class operations
+│   │   ├── useSchedule.ts      # Schedule management
+│   │   ├── useTasks.ts         # Task operations
+│   │   └── useUsers.ts         # User management
+│   ├── services/               # API layer
+│   │   ├── client.ts           # Base fetch wrapper
+│   │   ├── types.ts            # TypeScript interfaces
+│   │   ├── auth.ts             # Auth API
+│   │   ├── attendance.ts       # Attendance API
+│   │   ├── classes.ts          # Classes API
+│   │   ├── schedule.ts         # Schedule API
+│   │   ├── productivity.ts     # Productivity API
+│   │   ├── users.ts            # Users API
+│   │   ├── device.ts           # Device binding API
+│   │   ├── audit.ts            # Audit logs API
+│   │   └── index.ts            # Service exports
+│   └── store/                  # Global state
+│       └── authStore.ts        # Zustand auth store
+├── index.html                  # HTML entry point
+├── vite.config.ts              # Vite configuration
+├── tsconfig.json               # TypeScript configuration
+└── package.json                # Dependencies and scripts
 ```
 
-# Building For Production
+## Getting Started
 
-To build this application for production:
+### Prerequisites
 
-```bash
-npm run build
+- Node.js (v18 or higher)
+- npm or yarn package manager
+- Running ClassTrack server (see `../server/README.md`)
+
+### Installation
+
+1. **Navigate to client directory**
+   ```bash
+   cd classTrack/client
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment variables** (optional)
+   
+   Create `.env` file if you need custom API URL:
+   ```bash
+   VITE_API_URL=http://localhost:4000/api
+   ```
+   
+   Default is `http://localhost:4000/api` if not specified.
+
+4. **Start development server**
+   ```bash
+   npm run dev
+   ```
+
+The application will start at `http://localhost:3000`
+
+### Quick Test
+
+1. Ensure the server is running at `http://localhost:4000`
+2. Navigate to `http://localhost:3000`
+3. Click "Register" to create an account
+4. Login with your credentials
+5. Access role-specific dashboard
+
+## Architecture
+
+### Component Architecture
+
+The application follows a feature-based architecture:
+
+- **Pages** - Top-level route components, handle layout and data orchestration
+- **Components** - Reusable UI elements with specific responsibilities
+- **Hooks** - Custom hooks for data fetching and mutations
+- **Services** - API communication layer, decoupled from UI
+- **Store** - Global state for authentication persistence
+
+### Data Flow
+
+```
+User Action → Component → Custom Hook → Service → API
+                ↓            ↓
+            Optimistic    React Query Cache
+             Update           ↓
+                ↓         Automatic
+            UI Update     Invalidation
 ```
 
-## Testing
+### Type Safety
 
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+Every API call is fully typed:
 
-```bash
-npm run test
+```typescript
+// Service defines return type
+export const getClasses = (): Promise<{ classes: Class[] }> => 
+  get("/classes");
+
+// Hook inherits type
+export function useClasses() {
+  return useQuery<{ classes: Class[] }>({
+    queryKey: ["classes"],
+    queryFn: classesAPI.getAll,
+  });
+}
+
+// Component receives typed data
+const { data } = useClasses();
+// data is { classes: Class[] } | undefined
 ```
-
-## Styling
-
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
-
-
-
 
 ## Routing
-This project uses [TanStack Router](https://tanstack.com/router). The initial setup is a code based router. Which means that the routes are defined in code (in the `./src/main.tsx` file). If you like you can also use a file based routing setup by following the [File Based Routing](https://tanstack.com/router/latest/docs/framework/react/guide/file-based-routing) guide.
 
-### Adding A Route
+### Route Structure
 
-To add a new route to your application just add another `createRoute` call to the `./src/main.tsx` file. The example below adds a new `/about`route to the root route.
+TanStack Router provides type-safe routing with automatic code splitting:
 
-```tsx
-const aboutRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/about",
-  component: () => <h1>About</h1>,
-});
+```typescript
+/ (public)                    → App.tsx (Landing page)
+/login                        → Login.tsx
+/register                     → Register.tsx
+
+/protected (auth required)    → ProtectedRoute.tsx
+  /dashboard                  → Dashboard.tsx (Student)
+  /teacher                    → TeacherDashboard.tsx (Teacher)
+  /admin                      → AdminDashboard.tsx (Admin)
+  /attendance                 → Attendance.tsx
+  /schedule                   → Schedule.tsx
+  /productivity               → Productivity.tsx
+  /profile                    → Profile.tsx
+  /classes                    → Classes.tsx
+  /users                      → Users.tsx (Admin only)
 ```
 
-You will also need to add the route to the `routeTree` in the `./src/main.tsx` file.
+### Protected Routes
 
-```tsx
-const routeTree = rootRoute.addChildren([indexRoute, aboutRoute]);
-```
+Routes under `/protected` require authentication:
 
-With this set up you should be able to navigate to `/about` and see the about page.
-
-Of course you don't need to implement the About page in the `main.tsx` file. You can create that component in another file and import it into the `main.tsx` file, then use it in the `component` property of the `createRoute` call, like so:
-
-```tsx
-import About from "./components/About.tsx";
-
-const aboutRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/about",
-  component: About,
-});
-```
-
-That is how we have the `App` component set up with the home page.
-
-For more information on the options you have when you are creating code based routes check out the [Code Based Routing](https://tanstack.com/router/latest/docs/framework/react/guide/code-based-routing) documentation.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-
-Layouts can be used to wrap the contents of the routes in menus, headers, footers, etc.
-
-There is already a layout in the `src/main.tsx` file:
-
-```tsx
-const rootRoute = createRootRoute({
-  component: () => (
-    <>
-      <Outlet />
-      <TanStackRouterDevtools />
-    </>
-  ),
-});
-```
-
-You can use the React component specified in the `component` property of the `rootRoute` to wrap the contents of the routes. The `<Outlet />` component is used to render the current route within the body of the layout. For example you could add a header to the layout like so:
-
-```tsx
-import { Link } from "@tanstack/react-router";
-
-const rootRoute = createRootRoute({
-  component: () => (
-    <>
-      <header>
-        <nav>
-          <Link to="/">Home</Link>
-          <Link to="/about">About</Link>
-        </nav>
-      </header>
-      <Outlet />
-      <TanStackRouterDevtools />
-    </>
-  ),
-});
-```
-
-The `<TanStackRouterDevtools />` component is not required so you can remove it if you don't want it in your layout.
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-
-### Migrating To File Base Routing
-
-First you need to add the Vite plugin for Tanstack Router:
-
-```bash
-npm install @tanstack/router-plugin -D
-```
-
-From there you need to update your `vite.config.js` file to use the plugin:
-
-```ts
-import { defineConfig } from "vite";
-import viteReact from "@vitejs/plugin-react";
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
-import tailwindcss from "@tailwindcss/vite";
-
+```typescript
+// Automatic redirect to /login if not authenticated
+const ProtectedRoute = () => {
+  const user = useAuthStore((s) => s.user);
   
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [
-    TanStackRouterVite(),
-    viteReact(),
-    tailwindcss()
-  ],
-});
-```
-
-Now you'll need to rearrange your files a little bit. That starts with creating a `routes` directory in the `src` directory:
-
-```bash
-mkdir src/routes
-```
-
-Then you'll need to create a `src/routes/__root.tsx` file with the contents of the root route that was in `main.tsx`.
-
-```tsx
-import { Outlet, createRootRoute } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-
-export const Route = createRootRoute({
-  component: () => (
-    <>
-      <Outlet />
-      <TanStackRouterDevtools />
-    </>
-  ),
-});
-```
-
-Next up you'll need to move your home route code into `src/routes/index.tsx`
-
-```tsx
-import { createFileRoute } from "@tanstack/react-router";
-
-import logo from "../logo.svg";
-import "../App.css";
-
-export const Route = createFileRoute("/")({
-  component: App,
-});
-
-function App() {
-  return (
-    <div className="text-center">
-      <header className="min-h-screen flex flex-col items-center justify-center bg-[#282c34] text-white text-[calc(10px+2vmin)]">
-        <img
-          src={logo}
-          className="h-[40vmin] pointer-events-none animate-[spin_20s_linear_infinite]"
-          alt="logo"
-        />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="text-[#61dafb] hover:underline"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-        <a
-          className="text-[#61dafb] hover:underline"
-          href="https://tanstack.com"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn TanStack
-        </a>
-      </header>
-    </div>
-  );
-}
-```
-
-At this point you can delete `src/App.tsx`, you will no longer need it as the contents have moved into `src/routes/index.tsx`.
-
-The only additional code is the `createFileRoute` function that tells TanStack Router where to render the route. Helpfully the Vite plugin will keep the path argument that goes to `createFileRoute` automatically in sync with the file system.
-
-Finally the `src/main.tsx` file can be simplified down to this:
-
-```tsx
-import { StrictMode } from "react";
-import ReactDOM from "react-dom/client";
-import { RouterProvider, createRouter } from "@tanstack/react-router";
-
-// Import the generated route tree
-import { routeTree } from "./routeTree.gen";
-
-import "./styles.css";
-import reportWebVitals from "./reportWebVitals.ts";
-
-// Create a new router instance
-const router = createRouter({
-  routeTree,
-  defaultPreload: "intent",
-  defaultPreloadStaleTime: 0,
-  scrollRestoration: true,
-  defaultStructuralSharing: true
-});
-
-// Register the router instance for type safety
-declare module "@tanstack/react-router" {
-  interface Register {
-    router: typeof router;
+  if (!user) {
+    navigate({ to: "/login" });
+    return null;
   }
-}
-
-// Render the app
-const rootElement = document.getElementById("app")!;
-if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(
-    <StrictMode>
-      <RouterProvider router={router} />
-    </StrictMode>
-  );
-}
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+  
+  return <Outlet />;
+};
 ```
 
-Now you've got a file based routing setup in your project! Let's have some fun with it! Just create a file in `about.tsx` in `src/routes` and it if the application is running TanStack will automatically add contents to the file and you'll have the start of your `/about` route ready to go with no additional work. You can see why folks find File Based Routing so easy to use.
+### Navigation Features
 
-You can find out everything you need to know on how to use file based routing in the [File Based Routing](https://tanstack.com/router/latest/docs/framework/react/guide/file-based-routing) documentation.
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
+- **Preloading** - Routes preload on hover (`defaultPreload: "intent"`)
+- **Scroll Restoration** - Automatic scroll position memory
+- **Type-Safe Links** - TypeScript validates route paths
 
 ```tsx
-const peopleRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/people",
-  loader: async () => {
-    const response = await fetch("https://swapi.dev/api/people");
-    return response.json() as Promise<{
-      results: {
-        name: string;
-      }[];
-    }>;
-  },
-  component: () => {
-    const data = peopleRoute.useLoaderData();
-    return (
-      <ul>
-        {data.results.map((person) => (
-          <li key={person.name}>{person.name}</li>
-        ))}
-      </ul>
-    );
-  },
-});
+// Type-safe navigation
+<Link to="/dashboard">Dashboard</Link>
+// Compile error: Type '"invalid"' is not assignable to type '"/dashboard" | ...'
 ```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-### React-Query
-
-React-Query is an excellent addition or alternative to route loading and integrating it into you application is a breeze.
-
-First add your dependencies:
-
-```bash
-npm install @tanstack/react-query @tanstack/react-query-devtools
-```
-
-Next we'll need to create a query client and provider. We recommend putting those in `main.tsx`.
-
-```tsx
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
-// ...
-
-const queryClient = new QueryClient();
-
-// ...
-
-if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement);
-
-  root.render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  );
-}
-```
-
-You can also add TanStack Query Devtools to the root route (optional).
-
-```tsx
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-
-const rootRoute = createRootRoute({
-  component: () => (
-    <>
-      <Outlet />
-      <ReactQueryDevtools buttonPosition="top-right" />
-      <TanStackRouterDevtools />
-    </>
-  ),
-});
-```
-
-Now you can use `useQuery` to fetch your data.
-
-```tsx
-import { useQuery } from "@tanstack/react-query";
-
-import "./App.css";
-
-function App() {
-  const { data } = useQuery({
-    queryKey: ["people"],
-    queryFn: () =>
-      fetch("https://swapi.dev/api/people")
-        .then((res) => res.json())
-        .then((data) => data.results as { name: string }[]),
-    initialData: [],
-  });
-
-  return (
-    <div>
-      <ul>
-        {data.map((person) => (
-          <li key={person.name}>{person.name}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-export default App;
-```
-
-You can find out everything you need to know on how to use React-Query in the [React-Query documentation](https://tanstack.com/query/latest/docs/framework/react/overview).
 
 ## State Management
 
-Another common requirement for React applications is state management. There are many options for state management in React. TanStack Store provides a great starting point for your project.
+### Authentication Store (Zustand)
 
-First you need to add TanStack Store as a dependency:
+Persistent authentication state across page refreshes:
+
+```typescript
+interface AuthState {
+  user: User | null;
+  setUser: (u: User | null) => void;
+  logout: () => void;
+}
+
+// Usage
+const user = useAuthStore((s) => s.user);
+const setUser = useAuthStore((s) => s.setUser);
+```
+
+Stored in `localStorage` as `auth-storage`.
+
+### Server State (React Query)
+
+Automatic caching, refetching, and invalidation:
+
+```typescript
+// Configuration in main.tsx
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,  // Don't refetch on tab switch
+      retry: 1,                      // Retry failed requests once
+      staleTime: 5 * 60 * 1000,     // Cache valid for 5 minutes
+    },
+  },
+});
+```
+
+**Key Features:**
+- Automatic background refetching
+- Query invalidation on mutations
+- Optimistic updates
+- Built-in loading and error states
+
+## API Integration
+
+### Base Client
+
+All API calls use the centralized `fetchAPI` function:
+
+```typescript
+// Located in src/services/client.ts
+export async function fetchAPI<T>(
+  endpoint: string,
+  options?: RequestInit
+): Promise<T>
+
+// Features:
+// - Automatic credentials (cookies)
+// - 30-second timeout
+// - JSON parsing
+// - Error handling
+// - TypeScript generics
+```
+
+### Helper Functions
+
+```typescript
+// GET request
+const data = await get<{ users: User[] }>("/users");
+
+// POST request
+const result = await post("/auth/login", { email, password });
+
+// PATCH request
+await patch(`/users/${id}`, { name: "New Name" });
+
+// DELETE request
+await del(`/classes/${classId}`);
+```
+
+### Service Layer
+
+Each domain has a dedicated service file:
+
+```typescript
+// src/services/attendance.ts
+export const attendanceAPI = {
+  today: () => get<{ attendances: Attendance[] }>("/attendance/today"),
+  mark: (data: MarkAttendanceRequest) => post("/attendance/mark", data),
+  history: (userId?: string) => get(`/attendance/user/${userId}`),
+  getByClass: (classId: string) => get(`/attendance/class/${classId}`),
+};
+```
+
+### Error Handling
+
+Errors are automatically caught and displayed:
+
+```typescript
+// In hooks/useAttendance.ts
+export function useMarkAttendance() {
+  return useMutation({
+    mutationFn: attendanceAPI.mark,
+    onSuccess: () => {
+      toast.success("Attendance marked successfully! ✅");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to mark attendance");
+    },
+  });
+}
+```
+
+## Components
+
+### Layout Components
+
+**Layout.tsx**
+- Root layout wrapper
+- Includes Navbar
+- Renders child routes via `<Outlet />`
+
+**Navbar.tsx**
+- Role-based navigation menus
+- User information display
+- Logout functionality
+- Responsive mobile menu
+
+**ProtectedRoute.tsx**
+- Authentication guard
+- Redirects to login if not authenticated
+- Renders child routes for authenticated users
+
+### Shared Components
+
+**UIComponents.tsx**
+- Button variants
+- Input fields
+- Cards
+- Modals
+- Loading spinners
+- Other reusable UI elements
+
+## Pages
+
+### Public Pages
+
+**App.tsx** - Landing Page
+- Hero section with gradient branding
+- Feature cards (Attendance, Schedule, Productivity, Profile)
+- Call-to-action buttons
+- Statistics display
+- Responsive design
+
+**Login.tsx** - Authentication
+- Role selection (Student, Teacher, Admin)
+- Email/password form
+- Role-based navigation after login
+- Visual feedback for invalid credentials
+- Link to registration
+
+**Register.tsx** - User Registration
+- Multi-step or single-form registration
+- Role selection
+- Email validation
+- Password requirements
+- Redirect to login on success
+
+### Student Pages
+
+**Dashboard.tsx**
+- Today's attendance summary
+- Upcoming classes from schedule
+- Recent tasks
+- Quick action buttons
+- Statistics cards
+
+**Attendance.tsx**
+- Mark attendance with QR code/manual entry
+- View attendance history
+- Attendance percentage calculation
+- Filter by date/class
+
+**Schedule.tsx**
+- Weekly timetable view
+- Today's schedule highlighted
+- Class details on click
+- Add/remove from personal schedule
+
+**Productivity.tsx**
+- Task list with categories (academic, career, skill)
+- Create/edit/delete tasks
+- Mark tasks complete
+- AI-powered suggestions based on interests/goals
+- Priority sorting
+
+**Profile.tsx**
+- Edit personal information
+- Set interests and goals
+- View account statistics
+- Change password
+- Device binding status
+
+### Teacher Pages
+
+**TeacherDashboard.tsx**
+- Classes overview
+- Student count
+- Attendance statistics
+- Quick access to class management
+
+**Classes.tsx**
+- Create new classes
+- Edit existing classes
+- View enrolled students
+- Generate QR codes for attendance
+- Delete classes
+
+**Users.tsx** (Teachers see students)
+- Student directory
+- Filter/search students
+- View student details
+- Attendance records per student
+
+### Admin Pages
+
+**AdminDashboard.tsx**
+- System-wide statistics
+- Total users by role
+- Total classes
+- Attendance overview
+- Recent activity
+
+**Users.tsx** (Full Access)
+- CRUD operations for all users
+- Filter by role
+- Search functionality
+- Activate/deactivate accounts
+- View audit logs
+
+## Development
+
+### Available Scripts
 
 ```bash
-npm install @tanstack/store
+# Start development server (port 3000)
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run serve
+
+# Run tests
+npm run test
 ```
 
-Now let's create a simple counter in the `src/App.tsx` file as a demonstration.
+### Development Workflow
 
-```tsx
-import { useStore } from "@tanstack/react-store";
-import { Store } from "@tanstack/store";
-import "./App.css";
+1. **Start the server** - Ensure backend is running at `localhost:4000`
+2. **Run dev server** - `npm run dev`
+3. **Make changes** - Hot module replacement (HMR) for instant updates
+4. **Test features** - Use React Query Devtools and Router Devtools
+5. **Check types** - TypeScript will show errors in editor
 
-const countStore = new Store(0);
+### File Naming Conventions
 
-function App() {
-  const count = useStore(countStore);
-  return (
-    <div>
-      <button onClick={() => countStore.setState((n) => n + 1)}>
-        Increment - {count}
-      </button>
-    </div>
-  );
+- **Components** - PascalCase (e.g., `UserCard.tsx`)
+- **Hooks** - camelCase with `use` prefix (e.g., `useAuth.ts`)
+- **Services** - camelCase (e.g., `attendance.ts`)
+- **Types** - PascalCase interfaces (e.g., `User`, `Attendance`)
+- **Pages** - PascalCase (e.g., `Dashboard.tsx`)
+
+### Code Organization Best Practices
+
+**Separation of Concerns**
+- Components: UI rendering only
+- Hooks: Data fetching and state logic
+- Services: API communication
+- Store: Global state management
+
+**Type Safety**
+- Define interfaces in `services/types.ts`
+- Export from service files
+- Import in hooks and components
+
+**Custom Hooks Pattern**
+
+```typescript
+// ✅ Good - Encapsulates logic
+export function useAttendance() {
+  return useQuery({
+    queryKey: ["attendance"],
+    queryFn: attendanceAPI.today,
+  });
 }
 
-export default App;
+// ❌ Bad - API call in component
+const Component = () => {
+  const [data, setData] = useState();
+  useEffect(() => {
+    fetch("/api/attendance").then(setData);
+  }, []);
+};
 ```
 
-One of the many nice features of TanStack Store is the ability to derive state from other state. That derived state will update when the base state updates.
+### Adding New Features
 
-Let's check this out by doubling the count using derived state.
+1. **Define Types** - Add interfaces to `services/types.ts`
+2. **Create Service** - Add API functions to `services/[feature].ts`
+3. **Create Hook** - Add custom hook in `hooks/use[Feature].ts`
+4. **Create Component** - Build UI in `components/` or `pages/`
+5. **Add Route** (if needed) - Update `router.tsx`
 
-```tsx
-import { useStore } from "@tanstack/react-store";
-import { Store, Derived } from "@tanstack/store";
-import "./App.css";
+### Styling Guidelines
 
-const countStore = new Store(0);
+**Tailwind Classes**
+- Use utility classes for most styling
+- Keep consistent spacing scale (4, 8, 12, 16, 24, 32, 48, 64)
+- Use Tailwind colors (blue, gray, red, green, etc.)
 
-const doubledStore = new Derived({
-  fn: () => countStore.state * 2,
-  deps: [countStore],
+**Responsive Design**
+- Mobile-first approach
+- Use breakpoints: `md:`, `lg:`, `xl:`
+- Test on multiple screen sizes
+
+**Animations**
+- Use `tailwind-animate` for common animations
+- Keep animations subtle and purposeful
+- Transition duration: 200-300ms for most interactions
+
+### Performance Optimization
+
+**Code Splitting**
+- TanStack Router automatically splits routes
+- Use dynamic imports for heavy components
+
+**React Query Caching**
+- Data cached for 5 minutes by default
+- Invalidate on mutations
+- Share queries with same queryKey
+
+**Optimistic Updates**
+```typescript
+useMutation({
+  onMutate: async (newData) => {
+    // Cancel ongoing queries
+    await queryClient.cancelQueries({ queryKey: ["tasks"] });
+    
+    // Snapshot current value
+    const previous = queryClient.getQueryData(["tasks"]);
+    
+    // Optimistically update
+    queryClient.setQueryData(["tasks"], (old) => [...old, newData]);
+    
+    return { previous };
+  },
+  onError: (err, newData, context) => {
+    // Rollback on error
+    queryClient.setQueryData(["tasks"], context.previous);
+  },
 });
-doubledStore.mount();
-
-function App() {
-  const count = useStore(countStore);
-  const doubledCount = useStore(doubledStore);
-
-  return (
-    <div>
-      <button onClick={() => countStore.setState((n) => n + 1)}>
-        Increment - {count}
-      </button>
-      <div>Doubled - {doubledCount}</div>
-    </div>
-  );
-}
-
-export default App;
 ```
 
-We use the `Derived` class to create a new store that is derived from another store. The `Derived` class has a `mount` method that will start the derived store updating.
+## Build & Deployment
 
-Once we've created the derived store we can use it in the `App` component just like we would any other store using the `useStore` hook.
+### Production Build
 
-You can find out everything you need to know on how to use TanStack Store in the [TanStack Store documentation](https://tanstack.com/store/latest).
+```bash
+# Build optimized bundle
+npm run build
 
-# Demo files
+# Output directory: dist/
+# - Minified JavaScript
+# - Optimized CSS
+# - Asset hashing for cache busting
+```
 
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
+### Build Output
 
-# Learn More
+```
+dist/
+├── index.html              # Entry HTML
+├── assets/
+│   ├── index-[hash].js     # Main bundle
+│   ├── index-[hash].css    # Styles
+│   └── [routes]-[hash].js  # Route chunks
+└── public files            # Copied from public/
+```
 
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
+### Environment Variables
+
+Create `.env.production` for production settings:
+
+```bash
+VITE_API_URL=https://api.yourserver.com/api
+```
+
+Variables must start with `VITE_` to be exposed to the client.
+
+### Deployment Options
+
+**Static Hosting (Recommended)**
+
+Works with Vercel, Netlify, GitHub Pages, etc.
+
+**Vercel**
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel
+```
+
+**Netlify**
+```bash
+# Build command
+npm run build
+
+# Publish directory
+dist
+```
+
+**Custom Server (Nginx)**
+
+```nginx
+server {
+  listen 80;
+  server_name your-domain.com;
+  root /path/to/classtrack/client/dist;
+  index index.html;
+
+  # SPA fallback - all routes go to index.html
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+
+  # Cache static assets
+  location /assets/ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+  }
+}
+```
+
+### Pre-Deployment Checklist
+
+- [ ] Update API URL in environment variables
+- [ ] Test all user flows (Student, Teacher, Admin)
+- [ ] Check responsive design on mobile devices
+- [ ] Verify all API endpoints are accessible
+- [ ] Test authentication and session persistence
+- [ ] Run production build locally (`npm run build && npm run serve`)
+- [ ] Check browser console for errors
+- [ ] Test with real data (not just seed data)
+- [ ] Verify all protected routes require authentication
+- [ ] Check CORS configuration on server
+
+### Performance Monitoring
+
+The app includes web-vitals monitoring:
+
+```typescript
+// src/reportWebVitals.ts
+reportWebVitals(console.log);
+
+// Metrics tracked:
+// - CLS (Cumulative Layout Shift)
+// - FID (First Input Delay)
+// - FCP (First Contentful Paint)
+// - LCP (Largest Contentful Paint)
+// - TTFB (Time to First Byte)
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**API Connection Failed**
+- Verify server is running at `http://localhost:4000`
+- Check CORS configuration on server
+- Ensure `VITE_API_URL` is correct
+
+**Authentication Issues**
+- Clear browser cookies
+- Clear localStorage (`auth-storage`)
+- Verify JWT token is being sent in requests
+- Check token expiration (7 days default)
+
+**Route Not Found**
+- Check route definition in `router.tsx`
+- Verify route is properly nested
+- Ensure component is exported correctly
+
+**Build Errors**
+- Delete `node_modules` and `package-lock.json`
+- Run `npm install` again
+- Check TypeScript errors with `npx tsc --noEmit`
+
+**State Not Persisting**
+- Check browser localStorage is enabled
+- Verify Zustand persist middleware is configured
+- Check for conflicting storage keys
+
+### Browser Compatibility
+
+Supports all modern browsers:
+- Chrome/Edge (last 2 versions)
+- Firefox (last 2 versions)
+- Safari (last 2 versions)
+
+### DevTools
+
+**React Query Devtools**
+- Bottom-right corner in development
+- View all queries and their states
+- Inspect cached data
+- Manually trigger refetches
+
+**TanStack Router Devtools**
+- Bottom-left corner in development
+- View route tree
+- Inspect current route
+- Debug navigation
+
+---
+
+**Built for modern web standards with performance, accessibility, and user experience as top priorities.**
