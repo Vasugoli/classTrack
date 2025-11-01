@@ -3,8 +3,10 @@ import {
 	createRoute,
 	createRouter,
 } from "@tanstack/react-router";
+import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import App from "@/App";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -17,6 +19,8 @@ import Users from "@/pages/Users";
 import Classes from "@/pages/Classes";
 import TeacherDashboard from "@/pages/TeacherDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
+import DeviceManagement from "@/pages/DeviceManagement";
+import AuditLogs from "@/pages/AuditLogs";
 
 const rootRoute = createRootRoute({ component: Layout });
 
@@ -41,6 +45,21 @@ const protectedRoute = createRoute({
 	id: "protected",
 	component: ProtectedRoute,
 });
+
+// Teacher-only routes
+const teacherRoute = createRoute({
+	getParentRoute: () => protectedRoute,
+	id: "teacher-only",
+	component: () => <RoleProtectedRoute allowedRoles={["TEACHER", "ADMIN"]} />,
+});
+
+// Admin-only routes
+const adminRoute = createRoute({
+	getParentRoute: () => protectedRoute,
+	id: "admin-only",
+	component: () => <RoleProtectedRoute allowedRoles={["ADMIN"]} />,
+});
+
 const dashboardRoute = createRoute({
 	getParentRoute: () => protectedRoute,
 	path: "/dashboard",
@@ -77,14 +96,24 @@ const classesRoute = createRoute({
 	component: Classes,
 });
 const teacherDashboardRoute = createRoute({
-	getParentRoute: () => protectedRoute,
+	getParentRoute: () => teacherRoute,
 	path: "/teacher",
 	component: TeacherDashboard,
 });
 const adminDashboardRoute = createRoute({
-	getParentRoute: () => protectedRoute,
+	getParentRoute: () => adminRoute,
 	path: "/admin",
 	component: AdminDashboard,
+});
+const deviceManagementRoute = createRoute({
+	getParentRoute: () => protectedRoute,
+	path: "/devices",
+	component: DeviceManagement,
+});
+const auditLogsRoute = createRoute({
+	getParentRoute: () => adminRoute,
+	path: "/audit",
+	component: AuditLogs,
 });
 
 const routeTree = rootRoute.addChildren([
@@ -99,8 +128,9 @@ const routeTree = rootRoute.addChildren([
 		profileRoute,
 		usersRoute,
 		classesRoute,
-		teacherDashboardRoute,
-		adminDashboardRoute,
+		deviceManagementRoute,
+		teacherRoute.addChildren([teacherDashboardRoute]),
+		adminRoute.addChildren([adminDashboardRoute, auditLogsRoute]),
 	]),
 ]);
 
@@ -111,6 +141,12 @@ export const router = createRouter({
 	scrollRestoration: true,
 	defaultStructuralSharing: true,
 	defaultPreloadStaleTime: 0,
+	Wrap: ({ children }) => (
+		<>
+			{children}
+			<TanStackRouterDevtools router={router} initialIsOpen={false} />
+		</>
+	),
 });
 
 declare module "@tanstack/react-router" {

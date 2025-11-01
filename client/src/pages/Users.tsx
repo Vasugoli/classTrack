@@ -1,448 +1,199 @@
-import { useState } from "react";
-import { useUsers, useUpdateUserRole, useDeleteUser } from "@/hooks/useUsers";
-import { useAuthStore } from "@/store/authStore";
-import type { User } from "@/services";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { useUsersStore } from "@/store/usersStore";
+import { Page, PageHeader } from "@/components/ui/Page";
+import { Card, CardBody } from "@/components/ui/Card";
 
 export default function Users() {
-	const currentUser = useAuthStore((s) => s.user);
-	const [error, setError] = useState("");
+	const { users, loading, getAllUsers, updateUserRole, deleteUser } =
+		useUsersStore();
 	const [filter, setFilter] = useState<
 		"ALL" | "STUDENT" | "TEACHER" | "ADMIN"
 	>("ALL");
-	const [editingUser, setEditingUser] = useState<User | null>(null);
-	const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
-		null
-	);
 
-	const { data, refetch } = useUsers();
-	const updateRoleMutation = useUpdateUserRole();
-	const deleteUserMutation = useDeleteUser();
+	useEffect(() => {
+		getAllUsers();
+	}, [getAllUsers]);
 
-	const users = data?.users || [];
+	const handleUpdateRole = async (userId: string, newRole: string) => {
+		await updateUserRole(userId, newRole);
 
-	const handleRoleChange = async (
-		userId: string,
-		newRole: "STUDENT" | "TEACHER" | "ADMIN"
-	) => {
-		updateRoleMutation.mutate(
-			{ userId, role: newRole },
-			{
-				onSuccess: () => {
-					setEditingUser(null);
-					setError("");
-					refetch();
-				},
-				onError: (err: any) => {
-					const errorMsg = err?.message || "Failed to update role";
-					setError(errorMsg);
-					if (err.message?.includes("permission")) {
-						const permError =
-							"You don't have permission to change user roles. Only admins can do this.";
-						setError(permError);
-					}
-				},
-			}
-		);
+		if (!useUsersStore.getState().error) {
+			toast.success("User role updated successfully!");
+		} else {
+			toast.error(
+				useUsersStore.getState().error || "Failed to update role"
+			);
+		}
 	};
 
 	const handleDeleteUser = async (userId: string) => {
-		deleteUserMutation.mutate(userId, {
-			onSuccess: () => {
-				setShowDeleteConfirm(null);
-				setError("");
-				refetch();
-			},
-			onError: (err: any) => {
-				const errorMsg = err?.message || "Failed to delete user";
-				setError(errorMsg);
-				if (err.message?.includes("permission")) {
-					const permError =
-						"You don't have permission to delete this user.";
-					setError(permError);
-				}
-				setShowDeleteConfirm(null);
-			},
-		});
+		if (!confirm("Are you sure you want to delete this user?")) return;
+
+		await deleteUser(userId);
+
+		if (!useUsersStore.getState().error) {
+			toast.success("User deleted successfully!");
+		} else {
+			toast.error(
+				useUsersStore.getState().error || "Failed to delete user"
+			);
+		}
 	};
 
-	const filteredUsers = users.filter(
-		(u) => filter === "ALL" || u.role === filter
-	);
+	const filteredUsers =
+		filter === "ALL" ? users : users.filter((u) => u.role === filter);
 
-	// Check if user can edit/delete based on role
-	const canEditRole = () => {
-		return currentUser?.role === "ADMIN";
+	const stats = {
+		total: users.length,
+		students: users.filter((u) => u.role === "STUDENT").length,
+		teachers: users.filter((u) => u.role === "TEACHER").length,
+		admins: users.filter((u) => u.role === "ADMIN").length,
 	};
 
-	const canDeleteUser = (user: User) => {
-		// Can't delete yourself
-		if (user.id === currentUser?.id) return false;
-
-		// Teachers can only delete students
-		if (currentUser?.role === "TEACHER") {
-			return user.role === "STUDENT";
-		}
-
-		// Admins can delete teachers and students (but not other admins)
-		if (currentUser?.role === "ADMIN") {
-			return user.role !== "ADMIN";
-		}
-
-		return false;
-	};
-
-	// Get available filter options based on user role
-	const getFilterOptions = () => {
-		if (currentUser?.role === "TEACHER") {
-			return ["ALL", "STUDENT"]; // Teachers only see students
-		}
-		if (currentUser?.role === "ADMIN") {
-			return ["ALL", "STUDENT", "TEACHER"]; // Admins see students and teachers
-		}
-		return ["ALL", "STUDENT", "TEACHER", "ADMIN"];
-	};
+	if (loading) {
+		return (
+			<div className='flex items-center justify-center min-h-[60vh]'>
+				<div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600'></div>
+			</div>
+		);
+	}
 
 	return (
-		<div className='min-h-screen bg-gradient-to-br from-gray-50 to-blue-50'>
-			<div className='max-w-7xl mx-auto px-4 py-8'>
-				{/* Header */}
-				<div className='mb-8 animate-in'>
-					<div className='flex items-center gap-3 mb-3'>
-						<div className='w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg'>
-							<span className='text-2xl'>👥</span>
-						</div>
-						<div>
-							<h1 className='text-4xl font-bold text-gray-900'>
-								User Management
-							</h1>
-							<p className='text-gray-600 mt-1'>
-								{currentUser?.role === "TEACHER"
-									? "Manage your students"
-									: currentUser?.role === "ADMIN"
-									? "Manage teachers and students"
-									: "Manage all users in the system"}
-							</p>
-						</div>
+		<Page>
+			<PageHeader
+				title='Users Management'
+				subtitle='Manage all system users'
+			/>
+
+			{/* Stats */}
+			<div className='grid grid-cols-1 md:grid-cols-4 gap-6'>
+				<div className='bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg'>
+					<p className='text-white/80 text-sm mb-1'>Total Users</p>
+					<p className='text-3xl font-bold'>{stats.total}</p>
+				</div>
+				<div className='bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg'>
+					<p className='text-white/80 text-sm mb-1'>Students</p>
+					<p className='text-3xl font-bold'>{stats.students}</p>
+				</div>
+				<div className='bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg'>
+					<p className='text-white/80 text-sm mb-1'>Teachers</p>
+					<p className='text-3xl font-bold'>{stats.teachers}</p>
+				</div>
+				<div className='bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl p-6 text-white shadow-lg'>
+					<p className='text-white/80 text-sm mb-1'>Admins</p>
+					<p className='text-3xl font-bold'>{stats.admins}</p>
+				</div>
+			</div>
+
+			{/* Filters */}
+			<Card>
+				<CardBody>
+					<div className='flex items-center gap-3'>
+						<span className='text-sm font-medium text-gray-700'>
+							Filter:
+						</span>
+						{(["ALL", "STUDENT", "TEACHER", "ADMIN"] as const).map(
+							(f) => (
+								<button
+									key={f}
+									onClick={() => setFilter(f)}
+									className={`px-4 py-2 rounded-lg font-medium transition-all ${
+										filter === f
+											? "bg-blue-600 text-white shadow-md"
+											: "bg-gray-100 text-gray-700 hover:bg-gray-200"
+									}`}>
+									{f}
+								</button>
+							)
+						)}
 					</div>
-				</div>
+				</CardBody>
+			</Card>
 
-				{error && (
-					<div className='mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg text-red-700 flex items-start gap-3 animate-in shadow-sm'>
-						<span className='text-xl'>⚠️</span>
-						<div>
-							<p className='font-medium'>{error}</p>
-						</div>
-					</div>
-				)}
-
-				{/* Filter Buttons */}
-				<div className='mb-6 flex flex-wrap gap-2 animate-in'>
-					{getFilterOptions().map((f) => (
-						<button
-							key={f}
-							onClick={() => setFilter(f as any)}
-							className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-200 shadow-sm ${
-								filter === f
-									? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105"
-									: "bg-white text-gray-700 hover:bg-gray-50 hover:shadow-md border border-gray-200"
-							}`}>
-							{f}
-						</button>
-					))}
-				</div>
-
-				{/* Stats */}
-				<div className='grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 animate-in'>
-					<StatCard
-						label='Total Users'
-						value={users.length}
-						icon='👥'
-						color='blue'
-					/>
-					<StatCard
-						label='Students'
-						value={users.filter((u) => u.role === "STUDENT").length}
-						icon='🎓'
-						color='green'
-					/>
-					<StatCard
-						label='Teachers'
-						value={users.filter((u) => u.role === "TEACHER").length}
-						icon='👨‍🏫'
-						color='purple'
-					/>
-					<StatCard
-						label='Admins'
-						value={users.filter((u) => u.role === "ADMIN").length}
-						icon='🔐'
-						color='red'
-					/>
-				</div>
-
-				{/* Users Table */}
-				<div className='bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 animate-in'>
-					<div className='overflow-x-auto'>
+			{/* Users Table */}
+			<Card className='overflow-hidden'>
+				<div className='overflow-x-auto'>
+					{filteredUsers.length === 0 ? (
+						<p className='text-gray-500 text-center py-12'>
+							No users found
+						</p>
+					) : (
 						<table className='w-full'>
-							<thead className='bg-gradient-to-r from-gray-50 to-blue-50 border-b-2 border-gray-200'>
+							<thead className='bg-gray-50'>
 								<tr>
-									<th className='px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider'>
+									<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
 										Name
 									</th>
-									<th className='px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider'>
+									<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
 										Email
 									</th>
-									<th className='px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider'>
+									<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+										Enrollment
+									</th>
+									<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
 										Role
 									</th>
-									<th className='px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider'>
-										Enrollment/Info
-									</th>
-									<th className='px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider'>
-										Joined
-									</th>
-									<th className='px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider'>
+									<th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
 										Actions
 									</th>
 								</tr>
 							</thead>
-							<tbody className='bg-white divide-y divide-gray-100'>
-								{filteredUsers.length === 0 ? (
-									<tr>
-										<td
-											colSpan={6}
-											className='px-6 py-12 text-center'>
-											<div className='flex flex-col items-center gap-3'>
-												<span className='text-5xl'>
-													🔍
-												</span>
-												<p className='text-lg font-medium text-gray-600'>
-													No users found
-												</p>
-												<p className='text-sm text-gray-500'>
-													Try adjusting your filters
-												</p>
+							<tbody className='bg-white divide-y divide-gray-200'>
+								{filteredUsers.map((user) => (
+									<tr
+										key={user.id}
+										className='hover:bg-gray-50 transition-colors'>
+										<td className='px-6 py-4 whitespace-nowrap'>
+											<div className='font-medium text-gray-900'>
+												{user.name}
 											</div>
 										</td>
+										<td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>
+											{user.email}
+										</td>
+										<td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>
+											{user.enrollmentNo || "N/A"}
+										</td>
+										<td className='px-6 py-4 whitespace-nowrap'>
+											<select
+												title='Role'
+												aria-label='Role'
+												value={user.role}
+												onChange={(e) =>
+													handleUpdateRole(
+														user.id,
+														e.target.value
+													)
+												}
+												className='px-3 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent'>
+												<option value='STUDENT'>
+													STUDENT
+												</option>
+												<option value='TEACHER'>
+													TEACHER
+												</option>
+												<option value='ADMIN'>
+													ADMIN
+												</option>
+											</select>
+										</td>
+										<td className='px-6 py-4 whitespace-nowrap text-sm'>
+											<button
+												onClick={() =>
+													handleDeleteUser(user.id)
+												}
+												className='text-red-600 hover:text-red-800 font-medium'>
+												Delete
+											</button>
+										</td>
 									</tr>
-								) : (
-									filteredUsers.map((user) => (
-										<tr
-											key={user.id}
-											className='hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent transition-all duration-150'>
-											<td className='px-6 py-4 whitespace-nowrap'>
-												<div className='flex items-center gap-3'>
-													<div className='w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-sm'>
-														{user.name
-															.charAt(0)
-															.toUpperCase()}
-													</div>
-													<div className='font-semibold text-gray-900'>
-														{user.name}
-													</div>
-												</div>
-											</td>
-											<td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>
-												{user.email}
-											</td>
-											<td className='px-6 py-4 whitespace-nowrap'>
-												{editingUser?.id === user.id ? (
-													<select
-														value={editingUser.role}
-														onChange={(e) =>
-															setEditingUser({
-																...editingUser,
-																role: e.target
-																	.value as any,
-															})
-														}
-														className='px-3 py-2 border-2 border-blue-300 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 outline-none'
-														aria-label='User role'>
-														<option value='STUDENT'>
-															🎓 Student
-														</option>
-														<option value='TEACHER'>
-															👨‍🏫 Teacher
-														</option>
-														<option value='ADMIN'>
-															🔐 Admin
-														</option>
-													</select>
-												) : (
-													<span
-														className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full shadow-sm ${
-															user.role ===
-															"ADMIN"
-																? "bg-gradient-to-r from-red-500 to-red-600 text-white"
-																: user.role ===
-																  "TEACHER"
-																? "bg-gradient-to-r from-purple-500 to-purple-600 text-white"
-																: "bg-gradient-to-r from-green-500 to-green-600 text-white"
-														}`}>
-														{user.role ===
-															"ADMIN" && "🔐"}
-														{user.role ===
-															"TEACHER" && "👨‍🏫"}
-														{user.role ===
-															"STUDENT" && "🎓"}
-														{user.role}
-													</span>
-												)}
-											</td>
-											<td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>
-												{user.enrollmentNo ||
-													user.branch ||
-													"-"}
-											</td>
-											<td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>
-												{user.createdAt
-													? new Date(
-															user.createdAt
-													  ).toLocaleDateString()
-													: "N/A"}
-											</td>
-											<td className='px-6 py-4 whitespace-nowrap text-right text-sm font-medium'>
-												{user.id === currentUser?.id ? (
-													<span className='px-3 py-1.5 bg-gray-100 text-gray-500 rounded-full text-xs font-semibold'>
-														You
-													</span>
-												) : editingUser?.id ===
-												  user.id ? (
-													<div className='flex gap-2 justify-end'>
-														<button
-															onClick={() =>
-																handleRoleChange(
-																	user.id,
-																	editingUser.role
-																)
-															}
-															className='px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition-colors shadow-sm'>
-															✓ Save
-														</button>
-														<button
-															onClick={() =>
-																setEditingUser(
-																	null
-																)
-															}
-															className='px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold transition-colors'>
-															✕ Cancel
-														</button>
-													</div>
-												) : (
-													<div className='flex gap-2 justify-end'>
-														{canEditRole() && (
-															<button
-																onClick={() =>
-																	setEditingUser(
-																		user
-																	)
-																}
-																className='px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 font-semibold transition-all duration-200 hover:shadow-md'>
-																✏️ Edit
-															</button>
-														)}
-														{canDeleteUser(
-															user
-														) && (
-															<button
-																onClick={() =>
-																	setShowDeleteConfirm(
-																		user.id
-																	)
-																}
-																className='px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 font-semibold transition-all duration-200 hover:shadow-md'>
-																🗑️ Delete
-															</button>
-														)}
-														{!canEditRole() &&
-															!canDeleteUser(
-																user
-															) && (
-																<span className='px-3 py-1.5 bg-gray-100 text-gray-400 rounded-full text-xs font-semibold'>
-																	No Actions
-																</span>
-															)}
-													</div>
-												)}
-											</td>
-										</tr>
-									))
-								)}
+								))}
 							</tbody>
 						</table>
-					</div>
+					)}
 				</div>
-
-				{/* Delete Confirmation Modal */}
-				{showDeleteConfirm && (
-					<div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-in'>
-						<div className='bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl animate-in'>
-							<div className='text-center mb-6'>
-								<div className='w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4'>
-									<span className='text-3xl'>🗑️</span>
-								</div>
-								<h3 className='text-2xl font-bold text-gray-900 mb-2'>
-									Confirm Delete
-								</h3>
-								<p className='text-gray-600'>
-									Are you sure you want to delete this user?
-									This action cannot be undone.
-								</p>
-							</div>
-							<div className='flex gap-3'>
-								<button
-									onClick={() => setShowDeleteConfirm(null)}
-									className='flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50 font-semibold transition-all duration-200'>
-									Cancel
-								</button>
-								<button
-									onClick={() =>
-										handleDeleteUser(showDeleteConfirm)
-									}
-									className='flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 font-semibold shadow-lg transition-all duration-200'>
-									Delete
-								</button>
-							</div>
-						</div>
-					</div>
-				)}
-			</div>
-		</div>
-	);
-}
-
-function StatCard({
-	label,
-	value,
-	icon,
-	color,
-}: {
-	label: string;
-	value: number;
-	icon: string;
-	color: "blue" | "green" | "purple" | "red";
-}) {
-	const colors = {
-		blue: "from-blue-500 to-blue-600",
-		green: "from-green-500 to-green-600",
-		purple: "from-purple-500 to-purple-600",
-		red: "from-red-500 to-red-600",
-	};
-
-	return (
-		<div className='bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200 hover:-translate-y-1'>
-			<div className='flex items-center justify-between'>
-				<div>
-					<p className='text-sm font-medium text-gray-600 mb-1'>
-						{label}
-					</p>
-					<p className='text-3xl font-bold text-gray-900'>{value}</p>
-				</div>
-				<div
-					className={`w-14 h-14 bg-gradient-to-br ${colors[color]} rounded-xl flex items-center justify-center shadow-lg`}>
-					<span className='text-2xl'>{icon}</span>
-				</div>
-			</div>
-		</div>
+			</Card>
+		</Page>
 	);
 }

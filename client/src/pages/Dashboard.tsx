@@ -1,208 +1,261 @@
-import { Navigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
-import { useSchedules } from "@/hooks/useSchedule";
-import { useTodayAttendance } from "@/hooks/useAttendance";
-import { useTasks } from "@/hooks/useTasks";
+import { useAttendanceStore } from "@/store/attendanceStore";
+import { useScheduleStore } from "@/store/scheduleStore";
+import { useProductivityStore } from "@/store/productivityStore";
+import { Link } from "@tanstack/react-router";
+import { Page, PageHeader } from "@/components/ui/Page";
+import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/Card";
 
 export default function Dashboard() {
 	const user = useAuthStore((s) => s.user);
-	const { data: schedulesData, isLoading } = useSchedules();
-	const { data: attendanceData } = useTodayAttendance();
-	const { data: tasksData } = useTasks();
+	const { todayAttendance = [], getTodayAttendance } = useAttendanceStore();
+	const { schedules = [], getSchedule } = useScheduleStore();
+	const { tasks = [], getTasks } = useProductivityStore();
+	const [loading, setLoading] = useState(true);
 
-	const schedules = schedulesData?.schedules || [];
-	const pendingTasks =
-		tasksData?.tasks?.filter((t) => !t.completed).length || 0;
-	const attendanceRate = attendanceData?.attendances?.length || 0;
+	useEffect(() => {
+		loadDashboardData();
+	}, []);
 
-	// Redirect based on role
-	if (user?.role === "TEACHER") {
-		return <Navigate to='/teacher' />;
+	const loadDashboardData = async () => {
+		await Promise.all([getTodayAttendance(), getSchedule(), getTasks()]);
+		setLoading(false);
+	};
+
+	const getTodaySchedule = () => {
+		const today = new Date().getDay(); // 0=Sunday, 6=Saturday
+		return schedules.filter((s) => s.dayOfWeek === today);
+	};
+
+	const getAttendancePercentage = () => {
+		if (todayAttendance.length === 0) return 0;
+		const present = todayAttendance.filter(
+			(a: any) => a.status === "PRESENT"
+		).length;
+		return Math.round((present / todayAttendance.length) * 100);
+	};
+
+	const todaySchedule = getTodaySchedule();
+	const attendancePercentage = getAttendancePercentage();
+	const pendingTasks = tasks.filter((t) => !t.completed);
+
+	if (loading) {
+		return (
+			<div className='flex items-center justify-center min-h-[60vh]'>
+				<div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600'></div>
+			</div>
+		);
 	}
-	if (user?.role === "ADMIN") {
-		return <Navigate to='/admin' />;
-	}
 
-	// Student Dashboard
 	return (
-		<div className='min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'>
-			<div className='max-w-7xl mx-auto px-4 py-8'>
-				{/* Header */}
-				<div className='mb-8 animate-in'>
-					<div className='flex items-center justify-between'>
-						<div className='flex items-center gap-4'>
-							<div className='w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl'>
-								<span className='text-3xl'>📚</span>
-							</div>
-							<div>
-								<h1 className='text-4xl font-bold text-gray-900'>
-									Welcome back, {user?.name?.split(" ")[0]}!
-									👋
-								</h1>
-								<p className='text-gray-600 mt-1'>
-									Here's your student dashboard
-								</p>
-							</div>
-						</div>
-						<div className='text-sm text-gray-500'>
-							{new Date().toLocaleDateString("en-US", {
-								weekday: "long",
-								year: "numeric",
-								month: "long",
-								day: "numeric",
-							})}
-						</div>
-					</div>
-				</div>
+		<Page>
+			<PageHeader
+				title={
+					<span className='bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'>
+						Welcome back, {user?.name}! 👋
+					</span>
+				}
+				subtitle={"Here's your overview for today"}
+			/>
 
-				{/* Stats Grid */}
-				<div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 animate-in'>
-					<div className='bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1'>
-						<div className='flex items-center justify-between'>
-							<div>
-								<p className='text-sm font-semibold text-gray-600 mb-1'>
-									Classes This Week
-								</p>
-								<p className='text-4xl font-bold text-gray-900'>
-									{schedules.length}
-								</p>
-							</div>
-							<div className='w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg'>
-								<span className='text-2xl'>📚</span>
-							</div>
-						</div>
-						<div className='mt-4 flex items-center gap-2'>
-							<div className='px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full'>
-								Active
-							</div>
-						</div>
-					</div>
+			{/* Stats Grid */}
+			<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
+				<StatCard
+					title='Attendance Rate'
+					value={`${attendancePercentage}%`}
+					icon='📊'
+					color='blue'
+				/>
+				<StatCard
+					title='Today Sessions'
+					value={todayAttendance.length.toString()}
+					icon='📅'
+					color='green'
+				/>
+				<StatCard
+					title='Pending Tasks'
+					value={pendingTasks.length.toString()}
+					icon='✅'
+					color='purple'
+				/>
+				<StatCard
+					title='Classes Today'
+					value={todaySchedule.length.toString()}
+					icon='🎓'
+					color='pink'
+				/>
+			</div>
 
-					<div className='bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1'>
-						<div className='flex items-center justify-between'>
-							<div>
-								<p className='text-sm font-semibold text-gray-600 mb-1'>
-									Attendance Rate
-								</p>
-								<p className='text-4xl font-bold text-gray-900'>
-									{attendanceRate}%
-								</p>
-							</div>
-							<div className='w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg'>
-								<span className='text-2xl'>✅</span>
-							</div>
-						</div>
-						<div className='mt-4 flex items-center gap-2'>
-							<div className='px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full'>
-								Good
-							</div>
-						</div>
-					</div>
-
-					<div className='bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1'>
-						<div className='flex items-center justify-between'>
-							<div>
-								<p className='text-sm font-semibold text-gray-600 mb-1'>
-									Tasks Pending
-								</p>
-								<p className='text-4xl font-bold text-gray-900'>
-									{pendingTasks}
-								</p>
-							</div>
-							<div className='w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg'>
-								<span className='text-2xl'>🎯</span>
-							</div>
-						</div>
-						<div className='mt-4 flex items-center gap-2'>
-							<div className='px-2 py-1 bg-purple-100 text-purple-700 text-xs font-bold rounded-full'>
-								On Track
-							</div>
-						</div>
-					</div>
-				</div>
-
-				{/* Schedule Section */}
-				<div className='bg-white rounded-2xl shadow-xl p-8 border border-gray-100 animate-in'>
-					<div className='flex items-center justify-between mb-6'>
-						<div className='flex items-center gap-3'>
-							<div className='w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center'>
-								<span className='text-xl'>📅</span>
-							</div>
-							<h2 className='text-2xl font-bold text-gray-900'>
-								This Week's Schedule
-							</h2>
-						</div>
-					</div>
-
-					{isLoading ? (
-						<div className='flex items-center justify-center py-12'>
-							<svg
-								className='animate-spin h-10 w-10 text-blue-600'
-								viewBox='0 0 24 24'>
-								<circle
-									className='opacity-25'
-									cx='12'
-									cy='12'
-									r='10'
-									stroke='currentColor'
-									strokeWidth='4'
-									fill='none'
-								/>
-								<path
-									className='opacity-75'
-									fill='currentColor'
-									d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
-								/>
-							</svg>
-						</div>
-					) : schedules.length === 0 ? (
-						<div className='text-center py-12'>
-							<div className='inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl mb-4'>
-								<span className='text-4xl'>📭</span>
-							</div>
-							<p className='text-lg font-medium text-gray-600 mb-2'>
-								No schedule yet
+			{/* Main Content Grid */}
+			<div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+				{/* Today's Schedule */}
+				<Card>
+					<CardHeader className='p-6 flex items-center justify-between'>
+						<CardTitle>📅 Today's Schedule</CardTitle>
+						<Link
+							to='/schedule'
+							className='text-blue-600 hover:text-blue-700 text-sm font-medium'>
+							View All
+						</Link>
+					</CardHeader>
+					{todaySchedule.length === 0 ? (
+						<CardBody>
+							<p className='text-gray-500 text-center py-8'>
+								No classes scheduled for today
 							</p>
-							<p className='text-sm text-gray-500'>
-								Add classes from the Schedule page to get
-								started
-							</p>
-						</div>
+						</CardBody>
 					) : (
-						<div className='space-y-3'>
-							{schedules.map((s) => (
+						<CardBody className='space-y-3'>
+							{todaySchedule.map((item) => (
 								<div
-									key={s.id}
-									className='group flex items-center justify-between p-4 border-2 border-gray-100 rounded-xl hover:border-blue-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent transition-all duration-200 hover:shadow-md'>
-									<div className='flex items-center gap-4'>
-										<div className='w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-200'>
-											<span className='text-xl'>📖</span>
-										</div>
+									key={item.id}
+									className='p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors'>
+									<div className='flex items-center justify-between'>
 										<div>
-											<div className='font-bold text-gray-900 text-lg'>
-												{s.class?.name}
-											</div>
-											<div className='text-sm text-gray-600 flex items-center gap-2 mt-1'>
-												<span className='px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold'>
-													Day {s.dayOfWeek}
-												</span>
-												<span>•</span>
-												<span className='font-medium'>
-													{s.startTime} - {s.endTime}
-												</span>
-											</div>
+											<h3 className='font-semibold text-gray-800'>
+												{item.class?.name || "Unknown"}
+											</h3>
+											<p className='text-sm text-gray-600'>
+												{item.class?.code || "N/A"} •
+												Room {item.class?.room || "TBA"}
+											</p>
+										</div>
+										<div className='text-right'>
+											<p className='text-sm font-medium text-blue-600'>
+												{item.startTime} -{" "}
+												{item.endTime}
+											</p>
 										</div>
 									</div>
-									<div className='opacity-0 group-hover:opacity-100 transition-opacity'>
-										<span className='text-blue-600 font-semibold text-sm'>
-											View →
+								</div>
+							))}
+						</CardBody>
+					)}
+				</Card>
+
+				{/* Recent Attendance */}
+				<Card>
+					<CardHeader className='p-6 flex items-center justify-between'>
+						<CardTitle>✅ Today's Attendance</CardTitle>
+						<Link
+							to='/attendance'
+							className='text-blue-600 hover:text-blue-700 text-sm font-medium'>
+							View All
+						</Link>
+					</CardHeader>
+					{todayAttendance.length === 0 ? (
+						<CardBody>
+							<p className='text-gray-500 text-center py-8'>
+								No attendance records for today
+							</p>
+						</CardBody>
+					) : (
+						<CardBody className='space-y-3'>
+							{todayAttendance.slice(0, 5).map((item: any) => (
+								<div
+									key={item.id}
+									className='p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors'>
+									<div className='flex items-center justify-between'>
+										<div>
+											<h3 className='font-semibold text-gray-800'>
+												{item.class.name}
+											</h3>
+											<p className='text-sm text-gray-600'>
+												{item.class.code}
+											</p>
+										</div>
+										<span
+											className={`px-3 py-1 rounded-full text-xs font-medium ${
+												item.status === "PRESENT"
+													? "bg-green-100 text-green-700"
+													: item.status === "LATE"
+													? "bg-yellow-100 text-yellow-700"
+													: "bg-red-100 text-red-700"
+											}`}>
+											{item.status}
 										</span>
 									</div>
 								</div>
 							))}
-						</div>
+						</CardBody>
 					)}
+				</Card>
+
+				{/* Pending Tasks */}
+				<Card className='lg:col-span-2'>
+					<CardHeader className='p-6 flex items-center justify-between'>
+						<CardTitle>🎯 Pending Tasks</CardTitle>
+						<Link
+							to='/productivity'
+							className='text-blue-600 hover:text-blue-700 text-sm font-medium'>
+							View All
+						</Link>
+					</CardHeader>
+					{pendingTasks.length === 0 ? (
+						<CardBody>
+							<p className='text-gray-500 text-center py-8'>
+								No pending tasks. Great job! 🎉
+							</p>
+						</CardBody>
+					) : (
+						<CardBody className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+							{pendingTasks.slice(0, 4).map((task) => (
+								<div
+									key={task.id}
+									className='p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors'>
+									<h3 className='font-semibold text-gray-800 mb-1'>
+										{task.title}
+									</h3>
+									<div className='flex items-center justify-between'>
+										<span className='text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded'>
+											{task.category}
+										</span>
+										{task.dueDate && (
+											<span className='text-xs text-gray-600'>
+												Due:{" "}
+												{new Date(
+													task.dueDate
+												).toLocaleDateString()}
+											</span>
+										)}
+									</div>
+								</div>
+							))}
+						</CardBody>
+					)}
+				</Card>
+			</div>
+		</Page>
+	);
+}
+function StatCard({
+	title,
+	value,
+	icon,
+	color,
+}: {
+	title: string;
+	value: string;
+	icon: string;
+	color: "blue" | "green" | "purple" | "pink";
+}) {
+	const colorClasses = {
+		blue: "from-blue-500 to-blue-600",
+		green: "from-green-500 to-green-600",
+		purple: "from-purple-500 to-purple-600",
+		pink: "from-pink-500 to-pink-600",
+	};
+
+	return (
+		<div
+			className={`bg-gradient-to-br ${colorClasses[color]} rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow`}>
+			<div className='flex items-center justify-between'>
+				<div>
+					<p className='text-white/80 text-sm mb-1'>{title}</p>
+					<p className='text-3xl font-bold'>{value}</p>
 				</div>
+				<div className='text-4xl opacity-80'>{icon}</div>
 			</div>
 		</div>
 	);

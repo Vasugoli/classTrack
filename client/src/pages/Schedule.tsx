@@ -1,188 +1,296 @@
-import { useState } from "react";
-import {
-	useSchedules,
-	useCreateSchedule,
-	useDeleteSchedule,
-} from "@/hooks/useSchedule";
+import { useEffect, useState } from "react";
+import { useScheduleStore } from "@/store/scheduleStore";
+import { useClassesStore } from "@/store/classesStore";
 import toast from "react-hot-toast";
-import type { Schedule } from "@/services";
+import { Page, PageHeader } from "@/components/ui/Page";
+import { Card, CardHeader, CardTitle, CardBody } from "@/components/ui/Card";
+
+const DAYS = [
+	"Sunday",
+	"Monday",
+	"Tuesday",
+	"Wednesday",
+	"Thursday",
+	"Friday",
+	"Saturday",
+];
 
 export default function Schedule() {
-	const [classCode, setClassCode] = useState("");
-	const [dayOfWeek, setDayOfWeek] = useState(1);
-	const [startTime, setStartTime] = useState("09:00");
-	const [endTime, setEndTime] = useState("10:00");
+	const { schedules, loading, getSchedule, createSchedule, deleteSchedule } =
+		useScheduleStore();
+	const { classes, getClasses } = useClassesStore();
+	const [showAddModal, setShowAddModal] = useState(false);
+	const [formData, setFormData] = useState({
+		classId: "",
+		dayOfWeek: 1,
+		startTime: "09:00",
+		endTime: "10:00",
+	});
 
-	const { data, refetch } = useSchedules();
-	const createMutation = useCreateSchedule();
-	const deleteMutation = useDeleteSchedule();
+	useEffect(() => {
+		getSchedule();
+		getClasses();
+	}, [getSchedule, getClasses]);
 
-	const items = data?.schedules || [];
+	const handleAddSchedule = async (e: React.FormEvent) => {
+		e.preventDefault();
 
-	const DAYS = [
-		"Sunday",
-		"Monday",
-		"Tuesday",
-		"Wednesday",
-		"Thursday",
-		"Friday",
-		"Saturday",
-	];
+		await createSchedule(formData);
 
-	const add = async () => {
-		if (!classCode.trim()) {
-			toast.error("Please enter a class code");
-			return;
+		if (!useScheduleStore.getState().error) {
+			toast.success("Schedule added successfully!");
+			setShowAddModal(false);
+			setFormData({
+				classId: "",
+				dayOfWeek: 1,
+				startTime: "09:00",
+				endTime: "10:00",
+			});
+		} else {
+			toast.error(
+				useScheduleStore.getState().error || "Failed to add schedule"
+			);
 		}
-		createMutation.mutate(
-			{ classCode, dayOfWeek, startTime, endTime },
-			{
-				onSuccess: () => {
-					setClassCode("");
-					refetch();
-				},
-			}
-		);
 	};
 
-	const remove = async (id: string) => {
-		deleteMutation.mutate(id);
+	const handleDeleteSchedule = async (id: string) => {
+		if (!confirm("Are you sure you want to delete this schedule?")) return;
+
+		await deleteSchedule(id);
+
+		if (!useScheduleStore.getState().error) {
+			toast.success("Schedule deleted successfully!");
+		} else {
+			toast.error(
+				useScheduleStore.getState().error || "Failed to delete schedule"
+			);
+		}
 	};
+
+	const getSchedulesByDay = () => {
+		const byDay: { [key: number]: any[] } = {};
+
+		for (let i = 0; i < 7; i++) {
+			byDay[i] = schedules.filter((s: any) => s.dayOfWeek === i);
+		}
+
+		return byDay;
+	};
+
+	const schedulesByDay = getSchedulesByDay();
+	const today = new Date().getDay();
+
+	if (loading) {
+		return (
+			<div className='flex items-center justify-center min-h-[60vh]'>
+				<div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600'></div>
+			</div>
+		);
+	}
 
 	return (
-		<div className='min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50'>
-			<div className='max-w-5xl mx-auto px-4 py-8'>
-				<div className='mb-8 animate-in'>
-					<div className='flex items-center gap-3 mb-2'>
-						<div className='w-12 h-12 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg'>
-							<span className='text-2xl'>📅</span>
-						</div>
-						<div>
-							<h1 className='text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent'>
-								Schedule
-							</h1>
-							<p className='text-gray-600'>
-								Manage your weekly class schedule 🗓️
-							</p>
-						</div>
-					</div>
-				</div>
-
-				<div className='bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-8 animate-in'>
-					<h2 className='text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2'>
-						<span>➕</span>
-						Add Schedule
-					</h2>
-					<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-5 items-end'>
-						<div className='sm:col-span-2 space-y-2'>
-							<label className='block text-sm font-semibold text-gray-700'>
-								Class Code
-							</label>
-							<input
-								className='w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 outline-none'
-								placeholder='e.g., CS101'
-								value={classCode}
-								onChange={(e) => setClassCode(e.target.value)}
-							/>
-						</div>
-						<div className='space-y-2'>
-							<label
-								htmlFor='dayOfWeek'
-								className='block text-sm font-semibold text-gray-700'>
-								Day
-							</label>
-							<select
-								id='dayOfWeek'
-								className='w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 outline-none'
-								value={dayOfWeek}
-								onChange={(e) =>
-									setDayOfWeek(parseInt(e.target.value))
-								}>
-								{DAYS.map((day, i) => (
-									<option key={i} value={i}>
-										{day}
-									</option>
-								))}
-							</select>
-						</div>
-						<div className='space-y-2'>
-							<label className='block text-sm font-semibold text-gray-700'>
-								Start Time
-							</label>
-							<input
-								className='w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 outline-none'
-								type='time'
-								value={startTime}
-								onChange={(e) => setStartTime(e.target.value)}
-								placeholder='Select start time'
-								title='Start Time'
-							/>
-						</div>
-						<div className='space-y-2'>
-							<label className='block text-sm font-semibold text-gray-700'>
-								End Time
-							</label>
-							<input
-								className='w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 outline-none'
-								type='time'
-								value={endTime}
-								onChange={(e) => setEndTime(e.target.value)}
-								placeholder='Select end time'
-								title='End Time'
-							/>
-						</div>
-					</div>
+		<Page>
+			<PageHeader
+				title='Schedule'
+				subtitle='Your weekly class timetable'
+				actions={
 					<button
-						className='mt-6 w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-3.5 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
-						onClick={add}
-						disabled={createMutation.isPending}>
-						{createMutation.isPending
-							? "Adding..."
-							: "📅 Add to Schedule"}
+						onClick={() => setShowAddModal(true)}
+						className='px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all'>
+						➕ Add Schedule
 					</button>
-				</div>
+				}
+			/>
 
-				<div className='bg-white rounded-2xl shadow-xl border border-gray-100 p-8 animate-in'>
-					<h2 className='text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2'>
-						<span>📋</span>
-						Your Schedule
-					</h2>
-					{items.length === 0 ? (
-						<div className='text-center py-12'>
-							<div className='text-6xl mb-4'>📅</div>
-							<p className='text-gray-500 text-lg'>
-								No schedule items yet
-							</p>
-						</div>
-					) : (
-						<div className='space-y-3'>
-							{items.map((s: Schedule) => (
-								<div
-									key={s.id}
-									className='flex items-center justify-between p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200 hover:shadow-md transition-shadow duration-200'>
-									<div className='flex items-center gap-3 flex-1'>
-										<span className='text-2xl'>📖</span>
-										<div>
-											<div className='font-bold text-gray-800'>
-												{s.class?.name || classCode}
+			{/* Weekly Schedule Grid */}
+			<div className='grid grid-cols-1 gap-6'>
+				{DAYS.map((day, index) => (
+					<Card
+						key={day}
+						className={`${
+							index === today ? "ring-2 ring-blue-500" : ""
+						} overflow-hidden`}>
+						<CardHeader
+							className={`${
+								index === today
+									? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+									: "bg-gray-50"
+							} px-6 py-4`}>
+							<CardTitle>
+								<span className='flex items-center gap-2'>
+									{day}
+									{index === today && (
+										<span className='text-xs px-2 py-1 bg-white/20 rounded-full'>
+											Today
+										</span>
+									)}
+								</span>
+							</CardTitle>
+						</CardHeader>
+						<CardBody>
+							{schedulesByDay[index]?.length === 0 ? (
+								<p className='text-gray-500 text-center py-4'>
+									No classes scheduled
+								</p>
+							) : (
+								<div className='space-y-3'>
+									{schedulesByDay[index]?.map((schedule) => (
+										<div
+											key={schedule.id}
+											className='p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-between'>
+											<div className='flex-1'>
+												<h3 className='font-semibold text-gray-800'>
+													{schedule.class.name}
+												</h3>
+												<p className='text-sm text-gray-600'>
+													{schedule.class.code} • Room{" "}
+													{schedule.class.room ||
+														"TBA"}
+												</p>
+												<p className='text-sm font-medium text-blue-600 mt-1'>
+													{schedule.startTime} -{" "}
+													{schedule.endTime}
+												</p>
 											</div>
-											<div className='text-sm text-gray-600'>
-												{DAYS[s.dayOfWeek]} •{" "}
-												{s.startTime} - {s.endTime}
-											</div>
+											<button
+												onClick={() =>
+													handleDeleteSchedule(
+														schedule.id
+													)
+												}
+												className='px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors'>
+												🗑️
+											</button>
 										</div>
-									</div>
-									<button
-										className='px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium'
-										onClick={() => remove(s.id)}>
-										🗑️ Delete
-									</button>
+									))}
 								</div>
-							))}
-						</div>
-					)}
-				</div>
+							)}
+						</CardBody>
+					</Card>
+				))}
 			</div>
-		</div>
+
+			{/* Add Schedule Modal */}
+			{showAddModal && (
+				<div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4'>
+					<div className='bg-white rounded-xl p-8 max-w-md w-full'>
+						<h2 className='text-2xl font-bold text-gray-800 mb-4'>
+							Add Schedule
+						</h2>
+
+						<form
+							onSubmit={handleAddSchedule}
+							className='space-y-4'>
+							<div>
+								<label
+									htmlFor='classId'
+									className='block text-sm font-medium text-gray-700 mb-2'>
+									Class
+								</label>
+								<select
+									id='classId'
+									required
+									value={formData.classId}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											classId: e.target.value,
+										})
+									}
+									className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'>
+									<option value=''>Select a class</option>
+									{classes.map((cls) => (
+										<option key={cls.id} value={cls.id}>
+											{cls.name} ({cls.code})
+										</option>
+									))}
+								</select>
+							</div>
+
+							<div>
+								<label
+									htmlFor='dayOfWeek'
+									className='block text-sm font-medium text-gray-700 mb-2'>
+									Day of Week
+								</label>
+								<select
+									id='dayOfWeek'
+									required
+									value={formData.dayOfWeek}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											dayOfWeek: parseInt(e.target.value),
+										})
+									}
+									className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'>
+									{DAYS.map((day, index) => (
+										<option key={day} value={index}>
+											{day}
+										</option>
+									))}
+								</select>
+							</div>
+
+							<div className='grid grid-cols-2 gap-4'>
+								<div>
+									<label className='block text-sm font-medium text-gray-700 mb-2'>
+										Start Time
+									</label>
+									<input
+										type='time'
+										required
+										title='Start time'
+										placeholder='09:00'
+										value={formData.startTime}
+										onChange={(e) =>
+											setFormData({
+												...formData,
+												startTime: e.target.value,
+											})
+										}
+										className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+									/>
+								</div>
+
+								<div>
+									<label className='block text-sm font-medium text-gray-700 mb-2'>
+										End Time
+									</label>
+									<input
+										type='time'
+										required
+										title='End time'
+										placeholder='10:00'
+										value={formData.endTime}
+										onChange={(e) =>
+											setFormData({
+												...formData,
+												endTime: e.target.value,
+											})
+										}
+										className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+									/>
+								</div>
+							</div>
+
+							<div className='flex gap-3 mt-6'>
+								<button
+									type='button'
+									onClick={() => setShowAddModal(false)}
+									className='flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors'>
+									Cancel
+								</button>
+								<button
+									type='submit'
+									className='flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors'>
+									Add Schedule
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			)}
+		</Page>
 	);
 }

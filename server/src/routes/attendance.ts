@@ -3,15 +3,15 @@ import { requireAuth, requireRole } from "../middleware/auth";
 import { checkDeviceBinding } from "../middleware/checkDeviceBinding";
 import { checkGeoLock } from "../middleware/checkGeoLock";
 import {
-    auditLogger,
-    detectSuspiciousActivity,
+	auditLogger,
+	detectSuspiciousActivity,
 } from "../middleware/auditLogger";
 import {
-    markAttendance,
-    generateSessionToken,
-    getTodayAttendance,
-    getAttendanceHistory,
-    getAttendanceByClass,
+	markAttendance,
+	generateSessionToken,
+	getTodayAttendance,
+	getAttendanceHistory,
+	getAttendanceByClass,
 } from "../controllers/attendance_controller";
 
 const router = Router();
@@ -29,13 +29,13 @@ const router = Router();
  * 6. markAttendance - Actually mark the attendance
  */
 router.post(
-    "/mark",
-    requireAuth,
-    auditLogger("ATTENDANCE_ATTEMPT"),
-    detectSuspiciousActivity(),
-    checkDeviceBinding(),
-    checkGeoLock(),
-    markAttendance,
+	"/mark",
+	requireAuth,
+	auditLogger("ATTENDANCE_ATTEMPT"),
+	detectSuspiciousActivity(),
+	checkDeviceBinding(),
+	checkGeoLock(),
+	markAttendance
 );
 
 /**
@@ -43,11 +43,11 @@ router.post(
  * POST /api/attendance/token
  */
 router.post(
-    "/token",
-    requireAuth,
-    requireRole("TEACHER"),
-    auditLogger("TOKEN_INVALID"), // Using this as there's no TOKEN_GENERATE action
-    generateSessionToken,
+	"/token",
+	requireAuth,
+	requireRole("TEACHER", "ADMIN"),
+	auditLogger("TOKEN_INVALID"), // Using this as there's no TOKEN_GENERATE action
+	generateSessionToken
 );
 
 /**
@@ -67,10 +67,10 @@ router.get("/history", requireAuth, getAttendanceHistory);
  * GET /api/attendance/class/:classId
  */
 router.get(
-    "/class/:classId",
-    requireAuth,
-    requireRole("TEACHER", "ADMIN"),
-    getAttendanceByClass,
+	"/class/:classId",
+	requireAuth,
+	requireRole("TEACHER", "ADMIN"),
+	getAttendanceByClass
 );
 
 export default router;

@@ -1,226 +1,342 @@
 import { useEffect, useState } from "react";
-import { usersAPI } from "@/services";
-import toast from "react-hot-toast";
 import { useAuthStore } from "@/store/authStore";
+import { useUsersStore, type User } from "@/store/usersStore";
+import toast from "react-hot-toast";
+import { Page } from "@/components/ui/Page";
+import { Card, CardBody } from "@/components/ui/Card";
 
 export default function Profile() {
 	const user = useAuthStore((s) => s.user);
-	const [name, setName] = useState("");
-	const [interests, setInterests] = useState<string>("");
-	const [goals, setGoals] = useState<string>("");
-	const [loading, setLoading] = useState(true);
-	const [saving, setSaving] = useState(false);
+	const setUser = useAuthStore((s) => s.setUser);
+	const { getProfile, updateProfile, loading } = useUsersStore();
+	const [profile, setProfile] = useState<User | null>(null);
+	const [editing, setEditing] = useState(false);
+	const [formData, setFormData] = useState({
+		name: "",
+		year: 1,
+		branch: "",
+		interests: "",
+		goals: "",
+	});
 
-	const load = async () => {
-		try {
-			setLoading(true);
-			const res = await usersAPI.getProfile();
-			const u = res.user;
-			setName(u.name || "");
-			setInterests((u.interests || []).join(", "));
-			setGoals((u.goals || []).join(", "));
-		} catch (err: any) {
-			toast.error(err?.message || "Failed to load profile");
-		} finally {
-			setLoading(false);
+	useEffect(() => {
+		loadProfile();
+	}, []);
+
+	const loadProfile = async () => {
+		await getProfile();
+		const response = useUsersStore.getState().profile;
+
+		if (response) {
+			setProfile(response);
+			setFormData({
+				name: response.name || "",
+				year: response.year || 1,
+				branch: response.branch || "",
+				interests: response.interests?.join(", ") || "",
+				goals: response.goals?.join(", ") || "",
+			});
 		}
 	};
 
-	useEffect(() => {
-		load().catch(() => {});
-	}, []);
+	const handleUpdateProfile = async (e: React.FormEvent) => {
+		e.preventDefault();
 
-	const save = async () => {
-		try {
-			setSaving(true);
-			await usersAPI.updateProfile({
-				name: name || undefined,
-				interests: interests
-					.split(",")
-					.map((s) => s.trim())
-					.filter(Boolean),
-				goals: goals
-					.split(",")
-					.map((s) => s.trim())
-					.filter(Boolean),
-			});
-			toast.success("Profile updated successfully! 🎉");
-		} catch (err: any) {
-			toast.error(err?.message || "Failed to save profile");
-		} finally {
-			setSaving(false);
+		const payload: any = {
+			name: formData.name,
+		};
+
+		if (user?.role === "STUDENT") {
+			payload.year = formData.year;
+			payload.branch = formData.branch;
+			payload.interests = formData.interests
+				.split(",")
+				.map((s) => s.trim())
+				.filter(Boolean);
+			payload.goals = formData.goals
+				.split(",")
+				.map((s) => s.trim())
+				.filter(Boolean);
+		}
+
+		await updateProfile(payload);
+
+		if (!useUsersStore.getState().error) {
+			const updatedProfile = useUsersStore.getState().profile;
+			if (updatedProfile) {
+				setProfile(updatedProfile);
+				setUser({ ...user!, name: updatedProfile.name });
+			}
+			toast.success("Profile updated successfully!");
+			setEditing(false);
+		} else {
+			toast.error(
+				useUsersStore.getState().error || "Failed to update profile"
+			);
 		}
 	};
 
 	if (loading) {
 		return (
-			<div className='min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-50 flex items-center justify-center'>
-				<div className='flex flex-col items-center gap-4'>
-					<svg
-						className='animate-spin h-12 w-12 text-blue-600'
-						viewBox='0 0 24 24'>
-						<circle
-							className='opacity-25'
-							cx='12'
-							cy='12'
-							r='10'
-							stroke='currentColor'
-							strokeWidth='4'
-							fill='none'
-						/>
-						<path
-							className='opacity-75'
-							fill='currentColor'
-							d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
-						/>
-					</svg>
-					<div className='text-lg font-medium text-gray-700'>
-						Loading profile...
-					</div>
-				</div>
+			<div className='flex items-center justify-center min-h-[60vh]'>
+				<div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600'></div>
+			</div>
+		);
+	}
+
+	if (!profile) {
+		return (
+			<div className='text-center py-12'>
+				<p className='text-gray-600'>Profile not found</p>
 			</div>
 		);
 	}
 
 	return (
-		<div className='min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-50'>
-			<div className='max-w-3xl mx-auto px-4 py-8'>
-				{/* Header */}
-				<div className='mb-8 animate-in'>
-					<div className='flex items-center gap-3 mb-2'>
-						<div className='w-12 h-12 rounded-full bg-gradient-to-r from-cyan-600 to-blue-600 flex items-center justify-center shadow-lg'>
-							<span className='text-2xl'>👤</span>
-						</div>
-						<div>
-							<h1 className='text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent'>
-								My Profile
-							</h1>
-							<p className='text-gray-600'>{user?.email} 📧</p>
-						</div>
+		<Page className='max-w-4xl mx-auto space-y-8'>
+			{/* Header */}
+			<div className='bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 text-white shadow-lg'>
+				<div className='flex items-center gap-6'>
+					<div className='w-24 h-24 bg-white/20 rounded-full flex items-center justify-center text-4xl font-bold'>
+						{profile.name.charAt(0).toUpperCase()}
 					</div>
-				</div>
-
-				{/* Profile Card */}
-				<div className='bg-white rounded-2xl shadow-xl border border-gray-100 p-8 animate-in'>
-					<div className='space-y-6'>
-						{/* Name Input */}
-						<div className='space-y-2'>
-							<label className='block text-sm font-semibold text-gray-700'>
-								Name
-							</label>
-							<div className='relative'>
-								<div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none'>
-									<span className='text-gray-400 text-lg'>
-										👤
-									</span>
-								</div>
-								<input
-									title='Name'
-									placeholder='Your full name'
-									className='w-full border-2 border-gray-200 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none'
-									value={name}
-									onChange={(e) => setName(e.target.value)}
-								/>
-							</div>
-						</div>
-
-						{/* Role Badge */}
-						<div className='space-y-2'>
-							<label className='block text-sm font-semibold text-gray-700'>
-								Role
-							</label>
-							<div className='inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-100 to-indigo-100 border border-blue-200 rounded-xl'>
-								<span className='text-lg'>
-									{user?.role === "STUDENT" && "🎓"}
-									{user?.role === "TEACHER" && "👨‍🏫"}
-									{user?.role === "ADMIN" && "🔐"}
-								</span>
-								<span className='font-bold text-blue-700'>
-									{(user?.role?.charAt(0) ?? "") +
-										(user?.role?.slice(1).toLowerCase() ??
-											"")}
-								</span>
-							</div>
-						</div>
-
-						{/* Interests Input */}
-						<div className='space-y-2'>
-							<label className='block text-sm font-semibold text-gray-700'>
-								Interests (comma separated)
-							</label>
-							<div className='relative'>
-								<div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none'>
-									<span className='text-gray-400 text-lg'>
-										🎯
-									</span>
-								</div>
-								<input
-									title='Interests'
-									placeholder='e.g. AI, Math, React'
-									className='w-full border-2 border-gray-200 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none'
-									value={interests}
-									onChange={(e) =>
-										setInterests(e.target.value)
-									}
-								/>
-							</div>
-						</div>
-
-						{/* Goals Input */}
-						<div className='space-y-2'>
-							<label className='block text-sm font-semibold text-gray-700'>
-								Goals (comma separated)
-							</label>
-							<div className='relative'>
-								<div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none'>
-									<span className='text-gray-400 text-lg'>
-										🎓
-									</span>
-								</div>
-								<input
-									title='Goals'
-									placeholder='e.g. Get internship, Learn DS&A'
-									className='w-full border-2 border-gray-200 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none'
-									value={goals}
-									onChange={(e) => setGoals(e.target.value)}
-								/>
-							</div>
-						</div>
-
-						{/* Save Button */}
-						<button
-							className='w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-4 py-3.5 rounded-xl font-semibold hover:from-cyan-700 hover:to-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0'
-							onClick={save}
-							disabled={saving}>
-							{saving ? (
-								<span className='flex items-center justify-center gap-2'>
-									<svg
-										className='animate-spin h-5 w-5'
-										viewBox='0 0 24 24'>
-										<circle
-											className='opacity-25'
-											cx='12'
-											cy='12'
-											r='10'
-											stroke='currentColor'
-											strokeWidth='4'
-											fill='none'
-										/>
-										<path
-											className='opacity-75'
-											fill='currentColor'
-											d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
-										/>
-									</svg>
-									Saving...
-								</span>
-							) : (
-								"💾 Save Profile"
-							)}
-						</button>
+					<div>
+						<h1 className='text-3xl font-bold'>{profile.name}</h1>
+						<p className='text-blue-100 mt-1'>{profile.email}</p>
+						<p className='text-blue-100'>
+							<span className='px-3 py-1 bg-white/20 rounded-full text-sm mt-2 inline-block'>
+								{profile.role}
+							</span>
+						</p>
 					</div>
 				</div>
 			</div>
+
+			{/* Profile Information */}
+			<Card>
+				<CardBody className='p-8'>
+					<div className='flex items-center justify-between mb-6'>
+						<h2 className='text-2xl font-bold text-gray-800'>
+							Profile Information
+						</h2>
+
+						{!editing && (
+							<button
+								onClick={() => setEditing(true)}
+								className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors'>
+								✏️ Edit Profile
+							</button>
+						)}
+					</div>
+
+					{editing ? (
+						<form
+							onSubmit={handleUpdateProfile}
+							className='space-y-6'>
+							<div>
+								<label className='block text-sm font-medium text-gray-700 mb-2'>
+									Full Name
+								</label>
+								<input
+									type='text'
+									required
+									title='Full Name'
+									placeholder='Full Name'
+									value={formData.name}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											name: e.target.value,
+										})
+									}
+									className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+								/>
+							</div>
+
+							{user?.role === "STUDENT" && (
+								<>
+									<div className='grid grid-cols-2 gap-4'>
+										<div>
+											<label
+												htmlFor='year'
+												className='block text-sm font-medium text-gray-700 mb-2'>
+												Year
+											</label>
+											<input
+												id='year'
+												type='number'
+												min='1'
+												max='4'
+												value={formData.year}
+												onChange={(e) =>
+													setFormData({
+														...formData,
+														year: parseInt(
+															e.target.value
+														),
+													})
+												}
+												title='Year'
+												placeholder='Year (1-4)'
+												className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+											/>
+										</div>
+
+										<div>
+											<label className='block text-sm font-medium text-gray-700 mb-2'>
+												Branch
+											</label>
+											<input
+												type='text'
+												value={formData.branch}
+												onChange={(e) =>
+													setFormData({
+														...formData,
+														branch: e.target.value,
+													})
+												}
+												className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+												placeholder='Computer Science'
+											/>
+										</div>
+									</div>
+
+									<div>
+										<label className='block text-sm font-medium text-gray-700 mb-2'>
+											Interests (comma-separated)
+										</label>
+										<textarea
+											value={formData.interests}
+											onChange={(e) =>
+												setFormData({
+													...formData,
+													interests: e.target.value,
+												})
+											}
+											rows={3}
+											className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+											placeholder='Web Development, Machine Learning, etc.'
+										/>
+									</div>
+
+									<div>
+										<label className='block text-sm font-medium text-gray-700 mb-2'>
+											Goals (comma-separated)
+										</label>
+										<textarea
+											value={formData.goals}
+											onChange={(e) =>
+												setFormData({
+													...formData,
+													goals: e.target.value,
+												})
+											}
+											rows={3}
+											className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+											placeholder='Get internship, Learn React, etc.'
+										/>
+									</div>
+								</>
+							)}
+
+							<div className='flex gap-3'>
+								<button
+									type='button'
+									onClick={() => {
+										setEditing(false);
+										loadProfile();
+									}}
+									className='flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors'>
+									Cancel
+								</button>
+								<button
+									type='submit'
+									className='flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors'>
+									Save Changes
+								</button>
+							</div>
+						</form>
+					) : (
+						<div className='space-y-6'>
+							<InfoRow label='Email' value={profile.email} />
+							<InfoRow label='Role' value={profile.role} />
+
+							{profile.enrollmentNo && (
+								<InfoRow
+									label='Enrollment Number'
+									value={profile.enrollmentNo}
+								/>
+							)}
+
+							{user?.role === "STUDENT" && (
+								<>
+									{profile.year && (
+										<InfoRow
+											label='Year'
+											value={`Year ${profile.year}`}
+										/>
+									)}
+									{profile.branch && (
+										<InfoRow
+											label='Branch'
+											value={profile.branch}
+										/>
+									)}
+
+									{profile.interests &&
+										profile.interests.length > 0 && (
+											<div>
+												<h3 className='text-sm font-medium text-gray-700 mb-2'>
+													Interests
+												</h3>
+												<div className='flex flex-wrap gap-2'>
+													{profile.interests.map(
+														(interest, index) => (
+															<span
+																key={index}
+																className='px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm'>
+																{interest}
+															</span>
+														)
+													)}
+												</div>
+											</div>
+										)}
+
+									{profile.goals &&
+										profile.goals.length > 0 && (
+											<div>
+												<h3 className='text-sm font-medium text-gray-700 mb-2'>
+													Goals
+												</h3>
+												<div className='flex flex-wrap gap-2'>
+													{profile.goals.map(
+														(goal, index) => (
+															<span
+																key={index}
+																className='px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm'>
+																{goal}
+															</span>
+														)
+													)}
+												</div>
+											</div>
+										)}
+								</>
+							)}
+						</div>
+					)}
+				</CardBody>
+			</Card>
+		</Page>
+	);
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+	return (
+		<div className='border-b border-gray-200 pb-4'>
+			<p className='text-sm text-gray-600 mb-1'>{label}</p>
+			<p className='text-lg font-medium text-gray-800'>{value}</p>
 		</div>
 	);
 }
