@@ -15,18 +15,18 @@ function App() {
 				<div className='absolute -bottom-24 left-1/3 h-72 w-72 rounded-full bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-rose-500/20 blur-3xl animate-blob animation-delay-4000'></div>
 			</div>
 
-			<div className='min-h-[calc(100vh-80px)] relative flex flex-col items-center justify-center px-4 pt-10 pb-24'>
+			<div className='min-h-screen relative flex flex-col items-center justify-center px-4 pt-24 pb-24'>
 				{/* Hero Section */}
 				<div className='text-center space-y-6'>
 					<div className='inline-flex items-center gap-2 px-3 py-1 rounded-full border border-blue-200 bg-blue-50/50 text-blue-700 text-sm font-medium'>
 						<span className='h-2 w-2 rounded-full bg-blue-500 animate-pulse'></span>
 						Smart Attendance & Productivity
 					</div>
-					<div className='inline-block'>
+					<div className='w-full max-w-5xl mx-auto'>
 						<h1 className='text-5xl md:text-7xl font-extrabold tracking-tight bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent drop-shadow-sm'>
 							classTrack
 						</h1>
-						<div className='h-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600/70 rounded-full'></div>
+						<div className='h-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600/70 rounded-full mt-2'></div>
 					</div>
 
 					<p className='text-base md:text-lg text-gray-600 max-w-2xl mx-auto'>
@@ -61,7 +61,7 @@ function App() {
 				</div>
 
 				{/* Quick stats */}
-				<div className='grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-12 max-w-5xl w-full'>
+				<div className='grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-12 max-w-5xl w-full justify-center items-center'>
 					<StatCard number='99.9%' title='Uptime' />
 					<StatCard number='< 1s' title='Check‑in' />
 					<StatCard number='Role‑based' title='Access' />
@@ -258,12 +258,12 @@ function FeatureCard({
 	description: string;
 }) {
 	return (
-		<div className='p-6 rounded-2xl border border-white/40 bg-white/70 backdrop-blur shadow-sm hover:shadow-xl transition-all hover:scale-[1.02] hover:-translate-y-1'>
+		<div className='p-6 rounded-2xl border border-white/40 bg-white/70 backdrop-blur shadow-sm hover:shadow-xl transition-all hover:scale-[1.02] hover:-translate-y-1 flex flex-col h-full'>
 			<div className='text-4xl mb-3'>{icon}</div>
-			<h3 className='text-lg font-semibold text-gray-800 mb-2'>
+			<h3 className='text-lg font-semibold text-gray-800 mb-2 flex-0'>
 				{title}
 			</h3>
-			<p className='text-sm text-gray-600'>{description}</p>
+			<p className='text-sm text-gray-600 flex-1'>{description}</p>
 		</div>
 	);
 }
